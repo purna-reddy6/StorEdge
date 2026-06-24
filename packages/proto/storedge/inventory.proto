@@ -1,0 +1,85 @@
+syntax = "proto3";
+
+package storedge.inventory.v1;
+
+option go_package = "github.com/storedge/storedge/packages/proto/storedge";
+
+import "google/protobuf/timestamp.proto";
+
+// ─── Inventory / Pallet ────────────────────────────────────────────────────
+
+enum CommodityType {
+  COMMODITY_TYPE_UNSPECIFIED = 0;
+  COMMODITY_TYPE_POTATO = 1;
+  COMMODITY_TYPE_WHEAT = 2;
+  COMMODITY_TYPE_PADDY = 3;
+  COMMODITY_TYPE_FRUITS = 4;
+  COMMODITY_TYPE_VEGETABLES = 5;
+  COMMODITY_TYPE_PHARMA = 6;
+  COMMODITY_TYPE_APPAREL = 7;
+  COMMODITY_TYPE_ELECTRONICS = 8;
+  COMMODITY_TYPE_FMCG = 9;
+  COMMODITY_TYPE_OTHER = 10;
+}
+
+message PalletItem {
+  string id = 1;
+  string booking_id = 2;
+  string warehouse_id = 3;
+  string tenant_id = 4;
+  CommodityType commodity_type = 5;
+  string commodity_description = 6;
+  double weight_kg = 7;
+  double volume_cubic_meters = 8;
+  int32 bag_count = 9;           // For agricultural produce
+  string slot_position = 10;    // e.g., "A-03-02" (aisle-row-level)
+  bool enwrs_pledged = 11;      // Whether used as e-NWR collateral
+  string enwrs_receipt_id = 12;
+  google.protobuf.Timestamp inward_date = 13;
+  google.protobuf.Timestamp expected_outward_date = 14;
+}
+
+// ─── OTP Stock Release ─────────────────────────────────────────────────────
+
+message StockReleaseRequest {
+  string pallet_id = 1;
+  string tenant_id = 2;
+  double quantity_to_release_kg = 3;
+  string release_reason = 4;
+}
+
+message StockReleaseOTPRequest {
+  string release_request_id = 1;
+  string otp_code = 2;
+}
+
+message StockReleaseResponse {
+  string release_id = 1;
+  bool success = 2;
+  string message = 3;
+  google.protobuf.Timestamp authorized_at = 4;
+}
+
+// ─── IoT Telemetry Event ───────────────────────────────────────────────────
+
+message SensorReading {
+  string gateway_id = 1;
+  string facility_id = 2;
+  string sensor_id = 3;
+  double temperature_celsius = 4;
+  double relative_humidity = 5;
+  double ethylene_ppm = 6;
+  double co2_ppm = 7;
+  double battery_percentage = 8;
+  google.protobuf.Timestamp recorded_at = 9;
+}
+
+message SpoilageAlert {
+  string facility_id = 1;
+  string sensor_id = 2;
+  string alert_type = 3;    // "temperature_breach" | "ethylene_spike" | "humidity_high"
+  double current_value = 4;
+  double threshold_value = 5;
+  string affected_pallet_ids = 6;
+  google.protobuf.Timestamp triggered_at = 7;
+}

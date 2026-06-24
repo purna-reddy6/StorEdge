@@ -1,0 +1,184 @@
+syntax = "proto3";
+
+package storedge.warehouse.v1;
+
+option go_package = "github.com/storedge/storedge/packages/proto/storedge";
+
+import "google/protobuf/timestamp.proto";
+
+// ─── Shared Types ──────────────────────────────────────────────────────────
+
+message Location {
+  double latitude = 1;
+  double longitude = 2;
+  string address = 3;
+  string city = 4;
+  string state = 5;
+  string pincode = 6;
+}
+
+message PriceRange {
+  double min_price_per_pallet = 1;
+  double max_price_per_pallet = 2;
+  string currency = 3; // "INR" or "USD"
+}
+
+enum WarehouseType {
+  WAREHOUSE_TYPE_UNSPECIFIED = 0;
+  WAREHOUSE_TYPE_COLD_STORAGE = 1;       // Temperature-controlled agricultural
+  WAREHOUSE_TYPE_AMBIENT = 2;            // Standard commercial warehouse
+  WAREHOUSE_TYPE_BONDED = 3;             // Customs bonded
+  WAREHOUSE_TYPE_HAZMAT = 4;             // Hazardous materials
+  WAREHOUSE_TYPE_SELF_STORAGE = 5;       // P2P residential/small commercial
+  WAREHOUSE_TYPE_MICRO_FULFILLMENT = 6;  // E-commerce last-mile
+}
+
+enum WDRAStatus {
+  WDRA_STATUS_UNSPECIFIED = 0;
+  WDRA_STATUS_REGISTERED = 1;    // Active WDRA registration
+  WDRA_STATUS_PENDING = 2;       // Registration in progress
+  WDRA_STATUS_UNREGISTERED = 3;  // Not WDRA registered
+}
+
+// ─── Warehouse Entity ──────────────────────────────────────────────────────
+
+message Warehouse {
+  string id = 1;
+  string owner_id = 2;
+  string name = 3;
+  WarehouseType type = 4;
+  WDRAStatus wdra_status = 5;
+  string wdra_registration_number = 6;
+  Location location = 7;
+
+  // Capacity
+  int32 total_pallet_capacity = 8;
+  int32 available_pallet_slots = 9;
+  double floor_area_sqft = 10;
+  double current_occupancy_rate = 11; // 0.0 to 1.0
+
+  // Temperature specs (for cold storage)
+  double min_temperature_celsius = 12;
+  double max_temperature_celsius = 13;
+
+  // Pricing
+  double base_price_per_pallet_per_month = 14; // INR
+  double current_dynamic_price = 15;            // Adjusted by pricing engine
+
+  // Ratings
+  double rating = 16;           // 0.0 to 5.0
+  int32 total_reviews = 17;
+
+  // Compliance
+  bool apmc_licensed = 18;
+  bool gst_registered = 19;
+  string gst_number = 20;
+
+  // Metadata
+  bool is_active = 21;
+  google.protobuf.Timestamp created_at = 22;
+  google.protobuf.Timestamp updated_at = 23;
+}
+
+// ─── Matching Engine RPC ───────────────────────────────────────────────────
+
+message SearchWarehousesRequest {
+  Location origin = 1;           // Tenant's location
+  WarehouseType preferred_type = 2;
+  int32 required_pallets = 3;
+  double min_temperature = 4;    // For cold chain
+  double max_temperature = 5;
+  double max_distance_km = 6;
+  double max_price_per_pallet = 7;
+  bool wdra_registered_only = 8;
+
+  // Tenant priorities (must sum to 1.0)
+  double weight_distance = 9;   // w1
+  double weight_price = 10;     // w2
+  double weight_quality = 11;   // w3
+  double weight_temperature = 12; // w4
+
+  int32 page = 13;
+  int32 page_size = 14;
+}
+
+message WarehouseMatch {
+  Warehouse warehouse = 1;
+  double match_score = 2;         // S = w1×D + w2×P + w3×Q + w4×T
+  double distance_km = 3;
+  double estimated_monthly_cost = 4; // INR
+}
+
+message SearchWarehousesResponse {
+  repeated WarehouseMatch matches = 1;
+  int32 total_results = 2;
+  int32 page = 3;
+  int32 page_size = 4;
+}
+
+message GetWarehouseRequest {
+  string warehouse_id = 1;
+}
+
+message GetWarehouseResponse {
+  Warehouse warehouse = 1;
+}
+
+message GetDynamicPriceRequest {
+  string warehouse_id = 1;
+  int32 requested_pallets = 2;
+}
+
+message GetDynamicPriceResponse {
+  double price_per_pallet_per_month = 1; // INR
+  double occupancy_rate = 2;
+  string pricing_tier = 3; // "peak" | "standard" | "off-peak"
+}
+
+// ─── Booking ───────────────────────────────────────────────────────────────
+
+enum BookingStatus {
+  BOOKING_STATUS_UNSPECIFIED = 0;
+  BOOKING_STATUS_PENDING = 1;
+  BOOKING_STATUS_CONFIRMED = 2;
+  BOOKING_STATUS_ACTIVE = 3;
+  BOOKING_STATUS_COMPLETED = 4;
+  BOOKING_STATUS_CANCELLED = 5;
+  BOOKING_STATUS_DISPUTED = 6;
+}
+
+message Booking {
+  string id = 1;
+  string tenant_id = 2;
+  string warehouse_id = 3;
+  int32 pallet_count = 4;
+  double price_per_pallet = 5;    // INR — locked at booking time
+  double total_amount = 6;        // INR
+  double commission_amount = 7;   // 15% platform fee
+  BookingStatus status = 8;
+  google.protobuf.Timestamp start_date = 9;
+  google.protobuf.Timestamp end_date = 10;
+  google.protobuf.Timestamp created_at = 11;
+}
+
+message CreateBookingRequest {
+  string tenant_id = 1;
+  string warehouse_id = 2;
+  int32 pallet_count = 3;
+  google.protobuf.Timestamp start_date = 4;
+  google.protobuf.Timestamp end_date = 5;
+}
+
+message CreateBookingResponse {
+  Booking booking = 1;
+  string payment_intent_id = 2; // Stripe
+}
+
+// ─── Service Definition ────────────────────────────────────────────────────
+
+service WarehouseMatchService {
+  rpc SearchWarehouses(SearchWarehousesRequest) returns (SearchWarehousesResponse);
+  rpc GetWarehouse(GetWarehouseRequest) returns (GetWarehouseResponse);
+  rpc GetDynamicPrice(GetDynamicPriceRequest) returns (GetDynamicPriceResponse);
+  rpc CreateBooking(CreateBookingRequest) returns (CreateBookingResponse);
+}

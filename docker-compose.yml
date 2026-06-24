@@ -1,0 +1,267 @@
+version: "3.9"
+
+networks:
+  storedge-net:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:
+  kafka_data:
+  zookeeper_data:
+  elasticsearch_data:
+
+services:
+  # ─── Infrastructure ────────────────────────────────────────────────────────
+
+  postgres:
+    image: postgis/postgis:16-3.4-alpine
+    container_name: storedge-postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-storedge}
+      POSTGRES_USER: ${POSTGRES_USER:-storedge}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-storedge_dev}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./services/search-match/migrations:/docker-entrypoint-initdb.d
+    networks:
+      - storedge-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-storedge}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7.2-alpine
+    container_name: storedge-redis
+    command: redis-server --appendonly yes
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - storedge-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.6.0
+    container_name: storedge-zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    volumes:
+      - zookeeper_data:/var/lib/zookeeper/data
+    networks:
+      - storedge-net
+
+  kafka:
+    image: confluentinc/cp-kafka:7.6.0
+    container_name: storedge-kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    networks:
+      - storedge-net
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-broker-api-versions --bootstrap-server localhost:9092"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.13.0
+    container_name: storedge-elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+    ports:
+      - "9200:9200"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    networks:
+      - storedge-net
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.13.0
+    container_name: storedge-kibana
+    depends_on:
+      - elasticsearch
+    ports:
+      - "5601:5601"
+    environment:
+      ELASTICSEARCH_HOSTS: http://elasticsearch:9200
+    networks:
+      - storedge-net
+
+  # ─── Backend Microservices ─────────────────────────────────────────────────
+
+  search-match:
+    build:
+      context: ./services/search-match
+      dockerfile: Dockerfile
+    container_name: storedge-search-match
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
+    ports:
+      - "${SEARCH_MATCH_HTTP_PORT:-8080}:8080"
+      - "${SEARCH_MATCH_GRPC_PORT:-50051}:50051"
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-storedge}:${POSTGRES_PASSWORD:-storedge_dev}@postgres:5432/${POSTGRES_DB:-storedge}?sslmode=disable
+      REDIS_URL: redis://redis:6379/0
+      KAFKA_BROKERS: kafka:29092
+      ELASTICSEARCH_URL: http://elasticsearch:9200
+      JWT_SECRET: ${JWT_SECRET:-dev_secret_change_in_production}
+      AI_ENGINE_URL: http://ai-engine:8084
+      TARGET_UTILIZATION_RATE: ${TARGET_UTILIZATION_RATE:-0.85}
+      PLATFORM_COMMISSION_RATE: ${PLATFORM_COMMISSION_RATE:-0.15}
+      APP_ENV: ${APP_ENV:-development}
+      LOG_LEVEL: ${LOG_LEVEL:-debug}
+    networks:
+      - storedge-net
+    restart: unless-stopped
+
+  inventory-wms:
+    build:
+      context: ./services/inventory-wms
+      dockerfile: Dockerfile
+    container_name: storedge-inventory-wms
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    ports:
+      - "${INVENTORY_WMS_PORT:-8081}:8081"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-storedge}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-storedge}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-storedge_dev}
+      SPRING_REDIS_URL: redis://redis:6379
+      KAFKA_BROKERS: kafka:29092
+      JWT_SECRET: ${JWT_SECRET:-dev_secret_change_in_production}
+      APP_ENV: ${APP_ENV:-development}
+    networks:
+      - storedge-net
+    restart: unless-stopped
+
+  financing-enwrs:
+    build:
+      context: ./services/financing-enwrs
+      dockerfile: Dockerfile
+    container_name: storedge-financing
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    ports:
+      - "${FINANCING_ENWRS_PORT:-8082}:8082"
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-storedge}:${POSTGRES_PASSWORD:-storedge_dev}@postgres:5432/${POSTGRES_DB:-storedge}?sslmode=disable
+      KAFKA_BROKERS: kafka:29092
+      JWT_SECRET: ${JWT_SECRET:-dev_secret_change_in_production}
+      NERL_API_URL: ${NERL_API_URL:-http://mock-nerl:8090/api/v1}
+      NERL_API_KEY: ${NERL_API_KEY:-dev_stub}
+      ENWRS_ORIGINATION_FEE: ${ENWRS_ORIGINATION_FEE:-0.015}
+      APP_ENV: ${APP_ENV:-development}
+    networks:
+      - storedge-net
+    restart: unless-stopped
+
+  iot-gateway:
+    build:
+      context: ./services/iot-gateway
+      dockerfile: Dockerfile
+    container_name: storedge-iot-gateway
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    ports:
+      - "${IOT_GATEWAY_PORT:-8083}:8083"
+      - "1883:1883"
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-storedge}:${POSTGRES_PASSWORD:-storedge_dev}@postgres:5432/${POSTGRES_DB:-storedge}?sslmode=disable
+      KAFKA_BROKERS: kafka:29092
+      MQTT_PORT: 1883
+      APP_ENV: ${APP_ENV:-development}
+    networks:
+      - storedge-net
+    restart: unless-stopped
+
+  ai-engine:
+    build:
+      context: ./services/ai-engine
+      dockerfile: Dockerfile
+    container_name: storedge-ai-engine
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "${AI_ENGINE_PORT:-8084}:8084"
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-storedge}:${POSTGRES_PASSWORD:-storedge_dev}@postgres:5432/${POSTGRES_DB:-storedge}
+      TARGET_UTILIZATION_RATE: ${TARGET_UTILIZATION_RATE:-0.85}
+      APP_ENV: ${APP_ENV:-development}
+    networks:
+      - storedge-net
+    restart: unless-stopped
+
+  # ─── Frontend ──────────────────────────────────────────────────────────────
+
+  web:
+    build:
+      context: ./apps/web
+      dockerfile: Dockerfile
+      target: development
+    container_name: storedge-web
+    depends_on:
+      - search-match
+      - inventory-wms
+      - financing-enwrs
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./apps/web:/app
+      - /app/node_modules
+    environment:
+      VITE_API_URL: http://localhost:8080
+      VITE_WMS_URL: http://localhost:8081
+      VITE_FINANCING_URL: http://localhost:8082
+      VITE_MAPBOX_TOKEN: ${VITE_MAPBOX_TOKEN:-}
+    networks:
+      - storedge-net

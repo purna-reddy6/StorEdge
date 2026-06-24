@@ -1,0 +1,77 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build outputs
+dist/
+build/
+out/
+.next/
+.expo/
+*.class
+target/
+*.jar
+*.war
+
+# Go
+bin/
+vendor/
+*.exe
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+.env
+*.egg-info/
+dist/
+.pytest_cache/
+.mypy_cache/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+.env.development
+.env.production
+secrets/
+*.pem
+*.key
+*.crt
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Docker
+.docker/
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.backup
+*.tfvars
+.terraform.lock.hcl
+
+# Logs
+*.log
+logs/
+
+# Test coverage
+coverage/
+*.cover
+htmlcov/
+
+# Kubernetes secrets (never commit)
+infrastructure/k8s/secrets/
+
+# Proto generated files (committed separately)
+# *.pb.go
+# *_pb2.py
