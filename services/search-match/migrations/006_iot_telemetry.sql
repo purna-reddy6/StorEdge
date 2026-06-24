@@ -89,9 +89,9 @@ CREATE TABLE iot_alerts (
 CREATE INDEX idx_alerts_warehouse ON iot_alerts(warehouse_id, triggered_at DESC);
 CREATE INDEX idx_alerts_resolved ON iot_alerts(is_resolved) WHERE is_resolved = FALSE;
 
--- GPS truck tracking
+-- GPS truck tracking (partitioned by month — PK must include partition key)
 CREATE TABLE gps_tracks (
-  id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id              UUID DEFAULT uuid_generate_v4(),
   booking_id      UUID REFERENCES bookings(id),
   vehicle_id      VARCHAR(100) NOT NULL,
   driver_id       UUID REFERENCES users(id),
@@ -100,8 +100,9 @@ CREATE TABLE gps_tracks (
   geo_point       GEOMETRY(Point, 4326)
     GENERATED ALWAYS AS (ST_SetSRID(ST_MakePoint(longitude, latitude), 4326)) STORED,
   speed_kmh       NUMERIC(6,2),
-  temperature_celsius NUMERIC(6,2),  -- Reefer temp during transit
-  recorded_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  temperature_celsius NUMERIC(6,2),
+  recorded_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  PRIMARY KEY (id, recorded_at)
 ) PARTITION BY RANGE (recorded_at);
 
 CREATE TABLE gps_tracks_2026_06 PARTITION OF gps_tracks

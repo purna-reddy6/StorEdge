@@ -1,3 +1,10 @@
+FROM node:20-alpine AS development
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --legacy-peer-deps
+EXPOSE 3000
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
+
 FROM node:20-alpine AS build
 WORKDIR /app
 COPY package*.json ./
