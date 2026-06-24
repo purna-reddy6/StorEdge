@@ -19,9 +19,9 @@
 
 ## Current Project State
 
-**Status:** 🟡 IN PROGRESS — Foundation scaffolding complete, building core services  
+**Status:** 🟡 IN PROGRESS — Backend complete, React web portal complete, building mobile app next  
 **Phase:** MVP (Month 1 of 3)  
-**Commit:** `init: monorepo scaffold, project structure, .gitignore`
+**Commit:** `feat/web: React web portal with Mapbox search, booking, operator dashboard, IoT alerts`
 
 ---
 
@@ -51,9 +51,9 @@
 
 ## Current Goal
 
-**Building:** Full monorepo scaffold → PostgreSQL schema → Go search-match microservice → WMS → Financing → IoT → AI engine → React web portal → React Native mobile
+**Building:** React Native mobile app (farmer Android app) — Task 7  
 
-**Immediate objective:** Get all MVP services runnable via `docker-compose up` with seed data
+**Immediate objective:** Farmer-facing app with OTP login, warehouse map search, pallet inward/outward flow, and OTP-based stock release
 
 ---
 
@@ -116,11 +116,11 @@ storedge/
 
 ## Next Steps (Exact Actions)
 
-1. **[DONE]** Initialize git repo and create full directory structure
-2. **[IN PROGRESS]** Write `docker-compose.yml` with all local dev services
-3. **[NEXT]** Write shared Protobuf definitions (`packages/proto/`)
-4. **[NEXT]** Write all PostgreSQL migrations (`services/search-match/migrations/`)
-5. **[NEXT]** Build Go `search-match` microservice with matching engine
+1. **[NEXT]** Build React Native farmer mobile app — OTP login, warehouse search, pallet inward/outward, OTP stock release
+2. **[NEXT]** Write Kubernetes manifests (Deployments + Services + ConfigMaps) for all 5 microservices
+3. **[NEXT]** Write GitHub Actions CI pipeline (lint → test → docker build → push)
+4. **[NEXT]** Add `VITE_MAPBOX_TOKEN` to `.env.example` and ensure web portal CI passes
+5. **[NEXT]** Integration test: `docker-compose up` → seed data → end-to-end booking flow
 
 ---
 
@@ -178,4 +178,4 @@ storedge/
 
 ---
 
-*Last updated: 2026-06-24 | Next update: after PostgreSQL schema commit*
+*Last updated: 2026-06-24 | Next update: after React Native mobile app commit*
