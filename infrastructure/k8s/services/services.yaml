@@ -1,0 +1,93 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: search-match
+  namespace: storedge
+spec:
+  selector:
+    app: search-match
+  ports:
+    - name: rest
+      port: 8080
+      targetPort: 8080
+    - name: grpc
+      port: 50051
+      targetPort: 50051
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: inventory-wms
+  namespace: storedge
+spec:
+  selector:
+    app: inventory-wms
+  ports:
+    - port: 8081
+      targetPort: 8081
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: financing-enwrs
+  namespace: storedge
+spec:
+  selector:
+    app: financing-enwrs
+  ports:
+    - port: 8082
+      targetPort: 8082
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: iot-gateway
+  namespace: storedge
+spec:
+  selector:
+    app: iot-gateway
+  ports:
+    - name: http
+      port: 8083
+      targetPort: 8083
+    - name: mqtt
+      port: 1883
+      targetPort: 1883
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ai-engine
+  namespace: storedge
+spec:
+  selector:
+    app: ai-engine
+  ports:
+    - port: 8084
+      targetPort: 8084
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: web-portal
+  namespace: storedge
+spec:
+  selector:
+    app: web-portal
+  type: LoadBalancer
+  ports:
+    - port: 80
+      targetPort: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: search-match-external
+  namespace: storedge
+spec:
+  selector:
+    app: search-match
+  type: LoadBalancer
+  ports:
+    - port: 80
+      targetPort: 8080

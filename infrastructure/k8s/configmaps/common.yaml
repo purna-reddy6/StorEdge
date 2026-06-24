@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: storedge-common
+  namespace: storedge
+data:
+  KAFKA_BROKERS: "kafka:9092"
+  REDIS_URL: "redis://redis:6379"
+  ELASTICSEARCH_URL: "http://elasticsearch:9200"
+  AI_ENGINE_URL: "http://ai-engine:8084"
+  INVENTORY_WMS_URL: "http://inventory-wms:8081"
+  FINANCING_URL: "http://financing-enwrs:8082"
+  IOT_GATEWAY_URL: "http://iot-gateway:8083"
+  LOG_LEVEL: "info"
+  ENVIRONMENT: "production"

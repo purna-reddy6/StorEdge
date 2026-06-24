@@ -1,0 +1,183 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ghcr.io/${{ github.repository_owner }}/storedge
+
+jobs:
+  # ──────────────────────────────────────────────
+  # Go services (search-match, financing-enwrs, iot-gateway)
+  # ──────────────────────────────────────────────
+  go-lint-test:
+    name: Go lint + test
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: [search-match, financing-enwrs, iot-gateway]
+    defaults:
+      run:
+        working-directory: services/${{ matrix.service }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+          cache: true
+
+      - name: Download modules
+        run: go mod download
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Test
+        run: go test -race -coverprofile=coverage.out ./...
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v4
+        with:
+          files: services/${{ matrix.service }}/coverage.out
+          flags: ${{ matrix.service }}
+
+  # ──────────────────────────────────────────────
+  # Java inventory-wms
+  # ──────────────────────────────────────────────
+  java-test:
+    name: Java test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/inventory-wms
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          java-version: "21"
+          distribution: temurin
+          cache: maven
+
+      - name: Test
+        run: mvn -B test --no-transfer-progress
+
+  # ──────────────────────────────────────────────
+  # Python ai-engine
+  # ──────────────────────────────────────────────
+  python-test:
+    name: Python lint + test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/ai-engine
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install
+        run: pip install -r requirements.txt && pip install pytest ruff
+
+      - name: Lint
+        run: ruff check app/
+
+      - name: Test
+        run: pytest tests/ -v --tb=short
+
+  # ──────────────────────────────────────────────
+  # React web portal
+  # ──────────────────────────────────────────────
+  web-build:
+    name: Web portal build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/web
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+
+      - name: Install
+        run: npm ci --legacy-peer-deps
+
+      - name: Type check
+        run: npx tsc --noEmit
+
+      - name: Build
+        run: npm run build
+        env:
+          VITE_MAPBOX_TOKEN: ${{ secrets.VITE_MAPBOX_TOKEN }}
+
+  # ──────────────────────────────────────────────
+  # Docker build & push (main branch only)
+  # ──────────────────────────────────────────────
+  docker-build:
+    name: Docker build & push
+    runs-on: ubuntu-latest
+    needs: [go-lint-test, java-test, python-test, web-build]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        include:
+          - service: search-match
+            context: services/search-match
+          - service: inventory-wms
+            context: services/inventory-wms
+          - service: financing-enwrs
+            context: services/financing-enwrs
+          - service: iot-gateway
+            context: services/iot-gateway
+          - service: ai-engine
+            context: services/ai-engine
+          - service: web-portal
+            context: apps/web
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE_PREFIX }}/${{ matrix.service }}
+          tags: |
+            type=sha,prefix=sha-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: ${{ matrix.context }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            VITE_MAPBOX_TOKEN=${{ secrets.VITE_MAPBOX_TOKEN }}

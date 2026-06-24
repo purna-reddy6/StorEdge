@@ -1,0 +1,278 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: search-match
+  namespace: storedge
+  labels:
+    app: search-match
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: search-match
+  template:
+    metadata:
+      labels:
+        app: search-match
+    spec:
+      containers:
+        - name: search-match
+          image: ghcr.io/storedge/search-match:latest
+          ports:
+            - containerPort: 8080
+              name: rest
+            - containerPort: 50051
+              name: grpc
+          envFrom:
+            - configMapRef:
+                name: storedge-common
+            - secretRef:
+                name: storedge-secrets
+          env:
+            - name: PORT
+              value: "8080"
+            - name: GRPC_PORT
+              value: "50051"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 30
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: inventory-wms
+  namespace: storedge
+  labels:
+    app: inventory-wms
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: inventory-wms
+  template:
+    metadata:
+      labels:
+        app: inventory-wms
+    spec:
+      containers:
+        - name: inventory-wms
+          image: ghcr.io/storedge/inventory-wms:latest
+          ports:
+            - containerPort: 8081
+              name: http
+          envFrom:
+            - configMapRef:
+                name: storedge-common
+            - secretRef:
+                name: storedge-secrets
+          env:
+            - name: SERVER_PORT
+              value: "8081"
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 8081
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8081
+            initialDelaySeconds: 60
+            periodSeconds: 30
+          resources:
+            requests:
+              cpu: "200m"
+              memory: "512Mi"
+            limits:
+              cpu: "1000m"
+              memory: "1Gi"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: financing-enwrs
+  namespace: storedge
+  labels:
+    app: financing-enwrs
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: financing-enwrs
+  template:
+    metadata:
+      labels:
+        app: financing-enwrs
+    spec:
+      containers:
+        - name: financing-enwrs
+          image: ghcr.io/storedge/financing-enwrs:latest
+          ports:
+            - containerPort: 8082
+              name: http
+          envFrom:
+            - configMapRef:
+                name: storedge-common
+            - secretRef:
+                name: storedge-secrets
+          env:
+            - name: PORT
+              value: "8082"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8082
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "256Mi"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: iot-gateway
+  namespace: storedge
+  labels:
+    app: iot-gateway
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: iot-gateway
+  template:
+    metadata:
+      labels:
+        app: iot-gateway
+    spec:
+      containers:
+        - name: iot-gateway
+          image: ghcr.io/storedge/iot-gateway:latest
+          ports:
+            - containerPort: 8083
+              name: http
+            - containerPort: 1883
+              name: mqtt
+          envFrom:
+            - configMapRef:
+                name: storedge-common
+            - secretRef:
+                name: storedge-secrets
+          env:
+            - name: PORT
+              value: "8083"
+            - name: MQTT_PORT
+              value: "1883"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8083
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "300m"
+              memory: "256Mi"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ai-engine
+  namespace: storedge
+  labels:
+    app: ai-engine
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: ai-engine
+  template:
+    metadata:
+      labels:
+        app: ai-engine
+    spec:
+      containers:
+        - name: ai-engine
+          image: ghcr.io/storedge/ai-engine:latest
+          ports:
+            - containerPort: 8084
+              name: http
+          envFrom:
+            - configMapRef:
+                name: storedge-common
+            - secretRef:
+                name: storedge-secrets
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8084
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: "200m"
+              memory: "256Mi"
+            limits:
+              cpu: "800m"
+              memory: "512Mi"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web-portal
+  namespace: storedge
+  labels:
+    app: web-portal
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: web-portal
+  template:
+    metadata:
+      labels:
+        app: web-portal
+    spec:
+      containers:
+        - name: web-portal
+          image: ghcr.io/storedge/web-portal:latest
+          ports:
+            - containerPort: 80
+              name: http
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+            limits:
+              cpu: "200m"
+              memory: "128Mi"
