@@ -1,0 +1,57 @@
+spring:
+  application:
+    name: storedge-inventory-wms
+
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/storedge}
+    username: ${SPRING_DATASOURCE_USERNAME:storedge}
+    password: ${SPRING_DATASOURCE_PASSWORD:storedge_dev}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 30000
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+    show-sql: false
+
+  flyway:
+    enabled: false  # Migrations managed by search-match service
+
+  kafka:
+    bootstrap-servers: ${KAFKA_BROKERS:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+    consumer:
+      group-id: ${KAFKA_GROUP_ID:storedge-wms}
+      auto-offset-reset: earliest
+
+server:
+  port: ${SERVER_PORT:8081}
+  servlet:
+    context-path: /
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+
+storedge:
+  jwt:
+    secret: ${JWT_SECRET:dev_secret_change_in_production}
+    expiry-hours: 24
+  otp:
+    expiry-minutes: 10
+  kafka:
+    topics:
+      inventory-events: storedge.inventory.events
+      booking-events: storedge.booking.events
+      alert-events: storedge.iot.alerts
