@@ -50,7 +50,7 @@ func (h *BookingHandler) CreateBooking(c *gin.Context) {
 
 // ListBookings handles GET /api/v1/bookings
 func (h *BookingHandler) ListBookings(c *gin.Context) {
-	userID := currentUserID(c)
+	userID := tenantFilterID(c)
 	bookings, err := h.bookingSvc.ListBookings(c.Request.Context(), userID)
 	if err != nil {
 		h.logger.Error("list bookings failed", zap.Error(err))

@@ -125,3 +125,21 @@ func currentUserID(c *gin.Context) string {
 	}
 	return ""
 }
+
+func currentUserRole(c *gin.Context) string {
+	if u, ok := c.Get("user"); ok {
+		if user, ok := u.(*service.User); ok {
+			return user.Role
+		}
+	}
+	return ""
+}
+
+// tenantFilterID returns the user ID for tenant-scoped queries.
+// Operators see all data (returns ""), others see only their own data.
+func tenantFilterID(c *gin.Context) string {
+	if r := currentUserRole(c); r == "operator" || r == "admin" {
+		return ""
+	}
+	return currentUserID(c)
+}

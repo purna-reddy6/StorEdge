@@ -65,9 +65,33 @@ func (h *WarehouseHandler) Search(c *gin.Context) {
 		return
 	}
 
-	// Return 'warehouses' key (expected by web + mobile clients)
+	// Flatten: merge warehouse fields with match_score / distance_km at top level
+	// so the frontend can access w.name, w.id, w.latitude directly.
+	flat := make([]gin.H, 0, len(results))
+	for _, r := range results {
+		w := r.Warehouse
+		entry := gin.H{
+			"id": w.ID, "owner_id": w.OwnerID, "name": w.Name,
+			"description": w.Description, "type": w.Type,
+			"wdra_status": w.WDRAStatus, "wdra_registration_number": w.WDRARegNumber,
+			"longitude": w.Longitude, "latitude": w.Latitude,
+			"address_line1": w.AddressLine1, "city": w.City, "state": w.State, "pincode": w.Pincode,
+			"total_pallet_capacity": w.TotalPalletCapacity, "available_pallet_slots": w.AvailablePalletSlots,
+			"floor_area_sqft": w.FloorAreaSqft,
+			"min_temperature_celsius": w.MinTemperature, "max_temperature_celsius": w.MaxTemperature,
+			"price_per_pallet_per_day_inr": w.CurrentPrice,
+			"base_price_per_pallet_inr": w.BasePricePerPallet,
+			"rating": w.Rating, "total_reviews": w.TotalReviews,
+			"apmc_licensed": w.APMCLicensed, "gst_registered": w.GSTRegistered,
+			"cover_image_url": w.CoverImageURL,
+			"distance_km": r.DistanceKm, "match_score": r.MatchScore,
+			"estimated_monthly_cost_inr": r.EstimatedMonthlyCost,
+		}
+		flat = append(flat, entry)
+	}
+
 	c.JSON(http.StatusOK, gin.H{
-		"warehouses": results,
+		"warehouses": flat,
 		"total":      total,
 		"page":       page,
 		"page_size":  pageSize,

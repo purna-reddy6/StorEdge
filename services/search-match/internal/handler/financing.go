@@ -20,7 +20,7 @@ func NewFinancingHandler(svc *service.DashboardService, logger *zap.Logger) *Fin
 
 // ListReceipts handles GET /api/v1/financing/receipts
 func (h *FinancingHandler) ListReceipts(c *gin.Context) {
-	tenantID := currentUserID(c)
+	tenantID := tenantFilterID(c)
 	receipts, err := h.svc.ListReceipts(c.Request.Context(), tenantID)
 	if err != nil {
 		h.logger.Error("list receipts failed", zap.Error(err))

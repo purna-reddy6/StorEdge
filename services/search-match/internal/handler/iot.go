@@ -20,7 +20,7 @@ func NewIoTHandler(svc *service.DashboardService, logger *zap.Logger) *IoTHandle
 
 // ListAlerts handles GET /api/v1/iot/alerts
 func (h *IoTHandler) ListAlerts(c *gin.Context) {
-	ownerID := currentUserID(c)
+	ownerID := tenantFilterID(c)
 	alerts, err := h.svc.ListAlerts(c.Request.Context(), ownerID)
 	if err != nil {
 		h.logger.Error("list IoT alerts failed", zap.Error(err))

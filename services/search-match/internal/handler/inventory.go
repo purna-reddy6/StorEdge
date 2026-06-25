@@ -20,7 +20,7 @@ func NewInventoryHandler(svc *service.DashboardService, logger *zap.Logger) *Inv
 
 // ListPallets handles GET /api/v1/inventory/pallets
 func (h *InventoryHandler) ListPallets(c *gin.Context) {
-	tenantID := currentUserID(c)
+	tenantID := tenantFilterID(c)
 	pallets, err := h.svc.ListPallets(c.Request.Context(), tenantID)
 	if err != nil {
 		h.logger.Error("list pallets failed", zap.Error(err))

@@ -111,7 +111,7 @@ func (r *BookingRepository) ListByUser(ctx context.Context, userID string) ([]*m
 			b.total_amount_inr, b.commission_amount_inr, b.payout_amount_inr,
 			b.start_date, b.end_date, b.status, b.created_at,
 			w.name AS warehouse_name,
-			u.full_name AS farmer_name
+			u.name AS farmer_name
 		FROM bookings b
 		JOIN warehouses w ON w.id = b.warehouse_id
 		JOIN users u ON u.id = b.tenant_id`

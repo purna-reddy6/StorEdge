@@ -38,7 +38,7 @@ func (s *DashboardService) GetOccupancyStats(ctx context.Context, warehouseOwner
 		FROM bookings b
 		JOIN warehouses w ON w.id = b.warehouse_id
 		WHERE b.created_at >= NOW() - INTERVAL '30 days'
-		  AND ($1 = '' OR w.owner_id = $1::uuid)
+		  AND ($1 = '' OR w.owner_id::text = $1)
 		GROUP BY DATE(b.created_at)
 		ORDER BY day`
 
@@ -86,7 +86,7 @@ func (s *DashboardService) ListAlerts(ctx context.Context, warehouseOwnerID stri
 			a.severity::text, a.message, a.is_resolved, a.resolved_at, a.triggered_at
 		FROM iot_alerts a
 		JOIN warehouses w ON w.id = a.warehouse_id
-		WHERE ($1 = '' OR w.owner_id = $1::uuid)
+		WHERE ($1 = '' OR w.owner_id::text = $1)
 		ORDER BY a.triggered_at DESC
 		LIMIT 50`
 
@@ -118,36 +118,32 @@ func (s *DashboardService) ResolveAlert(ctx context.Context, alertID string) err
 // ─── Inventory / Pallets ─────────────────────────────────────────────────────
 
 type PalletItem struct {
-	ID                      string     `json:"id"`
-	PalletCode              string     `json:"palletCode"`
-	BookingID               string     `json:"bookingId"`
-	Commodity               string     `json:"commodity"`
-	QuantityKg              float64    `json:"quantityKg"`
-	SlotPosition            string     `json:"slotPosition"`
-	InwardDate              time.Time  `json:"inwardDate"`
-	ExpectedOutwardDate     time.Time  `json:"expectedOutwardDate"`
-	CurrentTemperatureCelsius *float64 `json:"currentTemperatureCelsius,omitempty"`
-	SpoilageRiskLevel       string     `json:"spoilageRiskLevel,omitempty"`
-	ReleaseStatus           string     `json:"releaseStatus,omitempty"`
+	ID                        string     `json:"id"`
+	BookingID                 string     `json:"bookingId"`
+	Commodity                 string     `json:"commodity"`
+	WeightKg                  float64    `json:"weightKg"`
+	SlotPosition              string     `json:"slotPosition"`
+	InwardDate                *time.Time `json:"inwardDate,omitempty"`
+	ExpectedOutwardDate       *string    `json:"expectedOutwardDate,omitempty"`
+	CurrentTemperatureCelsius *float64   `json:"currentTemperatureCelsius,omitempty"`
+	ReleaseStatus             string     `json:"releaseStatus,omitempty"`
 }
 
 func (s *DashboardService) ListPallets(ctx context.Context, tenantID string) ([]PalletItem, error) {
 	query := `
-		SELECT p.id, p.pallet_code, p.booking_id, p.commodity_type,
-			p.quantity_kg, COALESCE(p.slot_position, ''), p.actual_inward_date,
-			p.expected_outward_date,
+		SELECT p.id, p.booking_id, p.commodity_type,
+			p.weight_kg, COALESCE(p.slot_position, ''), p.inward_date,
+			p.expected_outward_date::text,
 			(SELECT sr.temperature_celsius FROM sensor_readings sr
-			 JOIN iot_sensors s ON s.id = sr.sensor_id
-			 JOIN bookings b2 ON b2.warehouse_id = s.warehouse_id
-			 WHERE b2.id = p.booking_id AND sr.temperature_celsius IS NOT NULL
+			 JOIN iot_sensors sens ON sens.id = sr.sensor_id
+			 WHERE sens.warehouse_id = p.warehouse_id AND sr.temperature_celsius IS NOT NULL
 			 ORDER BY sr.recorded_at DESC LIMIT 1) AS temp,
-			COALESCE(srr.release_status::text, '') AS release_status
+			COALESCE(srr.status::text, '') AS release_status
 		FROM pallet_items p
-		JOIN bookings b ON b.id = p.booking_id
 		LEFT JOIN stock_release_requests srr ON srr.pallet_item_id = p.id
-			AND srr.release_status NOT IN ('completed', 'cancelled')
-		WHERE ($1 = '' OR b.tenant_id = $1::uuid)
-		ORDER BY p.actual_inward_date DESC
+			AND srr.status NOT IN ('completed', 'rejected')
+		WHERE ($1 = '' OR p.tenant_id::text = $1)
+		ORDER BY p.inward_date DESC NULLS LAST
 		LIMIT 100`
 
 	rows, err := s.db.QueryContext(ctx, query, tenantID)
@@ -160,8 +156,8 @@ func (s *DashboardService) ListPallets(ctx context.Context, tenantID string) ([]
 	for rows.Next() {
 		var p PalletItem
 		if err := rows.Scan(
-			&p.ID, &p.PalletCode, &p.BookingID, &p.Commodity,
-			&p.QuantityKg, &p.SlotPosition, &p.InwardDate, &p.ExpectedOutwardDate,
+			&p.ID, &p.BookingID, &p.Commodity,
+			&p.WeightKg, &p.SlotPosition, &p.InwardDate, &p.ExpectedOutwardDate,
 			&p.CurrentTemperatureCelsius, &p.ReleaseStatus,
 		); err != nil {
 			return nil, err
@@ -198,26 +194,26 @@ func (s *DashboardService) AuthorizeRelease(ctx context.Context, palletItemID, o
 // ─── e-NWR Financing ─────────────────────────────────────────────────────────
 
 type EnwrReceipt struct {
-	ID                string    `json:"id"`
-	ReceiptNumber     string    `json:"receiptNumber"`
-	WarehouseID       string    `json:"warehouseId"`
-	Commodity         string    `json:"commodity"`
-	QuantityKg        float64   `json:"quantityKg"`
-	MarketValueInr    float64   `json:"marketValueInr"`
-	MaxLoanAmountInr  float64   `json:"maxLoanAmountInr"`
-	Status            string    `json:"status"`
-	IssueDate         time.Time `json:"issueDate"`
-	ExpiryDate        time.Time `json:"expiryDate"`
+	ID               string     `json:"id"`
+	ReceiptNumber    string     `json:"receiptNumber"`
+	WarehouseID      string     `json:"warehouseId"`
+	Commodity        string     `json:"commodity"`
+	QuantityKg       float64    `json:"quantityKg"`
+	MarketValueInr   float64    `json:"marketValueInr"`
+	MaxLoanAmountInr float64    `json:"maxLoanAmountInr"`
+	Status           string     `json:"status"`
+	IssuedAt         *time.Time `json:"issuedAt,omitempty"`
+	ExpiryDate       string     `json:"expiryDate"`
 }
 
 func (s *DashboardService) ListReceipts(ctx context.Context, tenantID string) ([]EnwrReceipt, error) {
 	query := `
 		SELECT id, receipt_number, warehouse_id, commodity_type,
 			quantity_kg, market_value_inr, max_loan_amount_inr,
-			status::text, issue_date, expiry_date
+			status::text, issued_at, expiry_date::text
 		FROM enwrs_receipts
-		WHERE ($1 = '' OR depositor_id = $1::uuid)
-		ORDER BY issue_date DESC
+		WHERE ($1 = '' OR depositor_id::text = $1)
+		ORDER BY created_at DESC
 		LIMIT 50`
 
 	rows, err := s.db.QueryContext(ctx, query, tenantID)
@@ -231,7 +227,7 @@ func (s *DashboardService) ListReceipts(ctx context.Context, tenantID string) ([
 		var r EnwrReceipt
 		if err := rows.Scan(&r.ID, &r.ReceiptNumber, &r.WarehouseID, &r.Commodity,
 			&r.QuantityKg, &r.MarketValueInr, &r.MaxLoanAmountInr,
-			&r.Status, &r.IssueDate, &r.ExpiryDate); err != nil {
+			&r.Status, &r.IssuedAt, &r.ExpiryDate); err != nil {
 			return nil, err
 		}
 		receipts = append(receipts, r)
@@ -240,7 +236,6 @@ func (s *DashboardService) ListReceipts(ctx context.Context, tenantID string) ([
 }
 
 func (s *DashboardService) ApplyForLoan(ctx context.Context, receiptID, applicantID string) error {
-	// Mark receipt as pledged and create a loan application record.
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
@@ -249,7 +244,8 @@ func (s *DashboardService) ApplyForLoan(ctx context.Context, receiptID, applican
 
 	var maxLoan float64
 	err = tx.QueryRowContext(ctx,
-		"UPDATE enwrs_receipts SET status = 'pledged', updated_at = NOW() WHERE id = $1::uuid AND status = 'issued' RETURNING max_loan_amount_inr",
+		`UPDATE enwrs_receipts SET status = 'pledged', updated_at = NOW()
+		 WHERE id = $1::uuid AND status = 'issued' RETURNING max_loan_amount_inr`,
 		receiptID).Scan(&maxLoan)
 	if err == sql.ErrNoRows {
 		return fmt.Errorf("receipt not found or already pledged")
@@ -259,10 +255,12 @@ func (s *DashboardService) ApplyForLoan(ctx context.Context, receiptID, applican
 	}
 
 	originationFee := maxLoan * 0.015
+	appNumber := fmt.Sprintf("LOAN-%d", time.Now().UnixMilli())
 	_, err = tx.ExecContext(ctx, `
-		INSERT INTO loan_applications (id, receipt_id, applicant_id, requested_amount_inr, origination_fee_inr, status)
-		VALUES (uuid_generate_v4(), $1::uuid, $2::uuid, $3, $4, 'submitted')`,
-		receiptID, applicantID, maxLoan, originationFee)
+		INSERT INTO loan_applications
+			(application_number, enwrs_receipt_id, applicant_id, requested_amount_inr, origination_fee_inr)
+		VALUES ($1, $2::uuid, $3::uuid, $4, $5)`,
+		appNumber, receiptID, applicantID, maxLoan, originationFee)
 	if err != nil {
 		return err
 	}
