@@ -8,9 +8,14 @@ export const formatDate = (iso: string): string => {
 
 export const warehouseTypeLabel: Record<string, string> = {
   cold_storage: 'Cold Storage',
+  ambient: 'Ambient / Dry',
   dry_warehouse: 'Dry Warehouse',
-  silo: 'Silo',
+  industrial: 'Industrial',
+  self_storage: 'Self Storage',
+  pharmaceutical: 'Pharma',
+  bonded: 'Bonded',
+  hazmat: 'HAZMAT',
   controlled_atmosphere: 'CA Store',
-  refrigerated_transport: 'Reefer',
-  agri_processing: 'Processing',
+  retail_backroom: 'Retail Backroom',
+  silo: 'Grain Silo',
 }

@@ -1,4 +1,4 @@
-export type UserRole = 'farmer' | 'trader' | 'operator' | 'admin' | 'logistics'
+export type UserRole = 'renter' | 'farmer' | 'trader' | 'operator' | 'admin' | 'logistics'
 
 export interface User {
   id: string
@@ -10,11 +10,16 @@ export interface User {
 
 export type WarehouseType =
   | 'cold_storage'
+  | 'ambient'
   | 'dry_warehouse'
-  | 'silo'
+  | 'industrial'
+  | 'self_storage'
+  | 'pharmaceutical'
+  | 'bonded'
+  | 'hazmat'
   | 'controlled_atmosphere'
-  | 'refrigerated_transport'
-  | 'agri_processing'
+  | 'retail_backroom'
+  | 'silo'
 
 export interface Warehouse {
   id: string
@@ -34,6 +39,7 @@ export interface Warehouse {
   total_reviews: number
   wdra_status: string
   apmc_licensed: boolean
+  gst_registered: boolean
   min_temperature_celsius?: number
   max_temperature_celsius?: number
   distance_km?: number

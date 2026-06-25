@@ -50,7 +50,7 @@ export default function LoginPage() {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-brand-700">StorEdge</h1>
-          <p className="text-gray-600 mt-2">Agricultural Warehouse Marketplace</p>
+          <p className="text-gray-600 mt-2">On-Demand Storage Marketplace</p>
         </div>
 
         <div className="card">

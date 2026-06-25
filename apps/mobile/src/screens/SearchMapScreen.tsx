@@ -18,7 +18,7 @@ interface Warehouse {
   base_price_per_pallet_inr: number
   price_per_pallet_per_day_inr: number
   rating: number
-  wdra_status: string
+  gst_registered: boolean
   distance_km?: number
   match_score?: number
 }
@@ -125,7 +125,7 @@ export default function SearchMapScreen() {
               <Text style={styles.cardType}>{warehouseTypeLabel[w.type] ?? w.type}</Text>
               <Text style={styles.cardPrice}>₹{w.price_per_pallet_per_day_inr.toFixed(0)}/pallet/day</Text>
               <Text style={styles.cardPallets}>⬡ {w.available_pallet_slots} pallets free</Text>
-              {w.wdra_status === 'registered' && <Text style={styles.wdra}>✓ WDRA</Text>}
+              {w.gst_registered && <Text style={styles.wdra}>✓ GST Verified</Text>}
               <TouchableOpacity
                 style={styles.bookBtn}
                 onPress={() => nav.navigate('WarehouseDetail', { warehouseId: w.id })}

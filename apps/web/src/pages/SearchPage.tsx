@@ -73,7 +73,7 @@ export default function SearchPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Max Price (₹/MT/mo)</label>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Max Price (₹/pallet/day)</label>
                 <input
                   type="number"
                   className="input"
@@ -90,7 +90,7 @@ export default function SearchPage() {
                   onChange={(e) => setParams({ needsColdChain: e.target.checked })}
                   className="rounded border-gray-300 text-brand-600"
                 />
-                Requires cold chain
+                Temperature-controlled (cold chain)
               </label>
 
               {params.needsColdChain && (

@@ -8,9 +8,14 @@ export const formatOccupancy = (pct: number): string => `${Math.round(pct * 100)
 
 export const warehouseTypeLabel: Record<string, string> = {
   cold_storage: 'Cold Storage',
+  ambient: 'Ambient / Dry',
   dry_warehouse: 'Dry Warehouse',
-  silo: 'Silo',
+  industrial: 'Industrial',
+  self_storage: 'Self Storage',
+  pharmaceutical: 'Pharma Cold Chain',
+  bonded: 'Bonded Warehouse',
+  hazmat: 'HAZMAT Certified',
   controlled_atmosphere: 'CA Store',
-  refrigerated_transport: 'Reefer Transport',
-  agri_processing: 'Agri Processing',
+  retail_backroom: 'Retail Backroom',
+  silo: 'Grain Silo',
 }

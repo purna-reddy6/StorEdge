@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	CommissionRate = 0.15 // 15% platform fee
+	CommissionRate = 0.10 // 10% platform fee
 )
 
 type BookingService struct {

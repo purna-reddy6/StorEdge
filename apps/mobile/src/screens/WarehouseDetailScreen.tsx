@@ -11,7 +11,7 @@ interface Warehouse {
   id: string; name: string; address_line1: string; city: string; state: string
   type: string; total_pallet_capacity: number; available_pallet_slots: number
   base_price_per_pallet_inr: number; price_per_pallet_per_day_inr: number
-  rating: number; total_reviews: number; wdra_status: string; apmc_licensed: boolean
+  rating: number; total_reviews: number; gst_registered: boolean
   min_temperature_celsius?: number; max_temperature_celsius?: number
 }
 
@@ -41,15 +41,14 @@ export default function WarehouseDetailScreen() {
           <Text style={styles.name}>{warehouse.name}</Text>
           <View>
             <Text style={styles.price}>{formatINR(price)}</Text>
-            <Text style={styles.priceSub}>/MT/month</Text>
+            <Text style={styles.priceSub}>/pallet/day</Text>
           </View>
         </View>
         <Text style={styles.address}>{warehouse.address_line1}, {warehouse.city}, {warehouse.state}</Text>
 
         <View style={styles.badges}>
           <View style={styles.badge}><Text style={styles.badgeText}>{warehouseTypeLabel[warehouse.type] ?? warehouse.type}</Text></View>
-          {warehouse.wdra_status === 'registered' && <View style={[styles.badge, styles.badgeGreen]}><Text style={styles.badgeGreenText}>✓ WDRA</Text></View>}
-          {warehouse.apmc_licensed && <View style={[styles.badge, styles.badgeBlue]}><Text style={styles.badgeBluetText}>APMC</Text></View>}
+          {warehouse.gst_registered && <View style={[styles.badge, styles.badgeGreen]}><Text style={styles.badgeGreenText}>✓ GST Verified</Text></View>}
         </View>
       </View>
 

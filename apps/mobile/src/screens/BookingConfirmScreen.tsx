@@ -26,7 +26,7 @@ export default function BookingConfirmScreen() {
     ? Math.max(1, Math.ceil((new Date(outwardDate).getTime() - new Date(inwardDate).getTime()) / 86400000))
     : 30
   const estimatedTotal = Math.round((2500 / 30) * days * palletCount * 0.5)
-  const commission = Math.round(estimatedTotal * 0.15)
+  const commission = Math.round(estimatedTotal * 0.10)
 
   const submit = async () => {
     if (!inwardDate || !outwardDate) {
@@ -99,7 +99,7 @@ export default function BookingConfirmScreen() {
       <View style={styles.card}>
         <Text style={styles.sectionTitle}>Price Breakdown</Text>
         <Row label={`Storage (${days} days × ${palletCount} pallets)`} value={formatINR(estimatedTotal)} />
-        <Row label="Platform commission (15%)" value={`−${formatINR(commission)}`} muted />
+        <Row label="Platform fee (10%)" value={`−${formatINR(commission)}`} muted />
         <View style={styles.divider} />
         <Row label="Operator receives" value={formatINR(estimatedTotal - commission)} bold />
         <Text style={styles.note}>* Estimate based on average ₹2,500/MT/mo. Actual price confirmed on booking.</Text>

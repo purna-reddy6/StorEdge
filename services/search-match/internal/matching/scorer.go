@@ -13,7 +13,7 @@ func Score(w Warehouse, req SearchRequest) float64 {
 
 	dNorm := scoreDistance(w.DistanceKm, req.MaxDistanceKm)
 	pNorm := scorePrice(w.CurrentPrice, req.MaxPricePerPallet)
-	qNorm := scoreQuality(w.Rating, w.TotalReviews, w.WDRAStatus, w.APMCLicensed)
+	qNorm := scoreQuality(w.Rating, w.TotalReviews, w.GSTRegistered)
 	tCompat := scoreTemperature(w, req)
 
 	return w1[0]*dNorm + w1[1]*pNorm + w1[2]*qNorm + w1[3]*tCompat
@@ -49,22 +49,18 @@ func scorePrice(currentPrice, maxPrice float64) float64 {
 	return math.Max(0, math.Min(1, normalized))
 }
 
-// scoreQuality combines rating (0-5), review count (credibility), and compliance flags.
-func scoreQuality(rating float64, reviews int, wdraStatus string, apmcLicensed bool) float64 {
-	// Rating contribution (0-1)
+// scoreQuality combines rating (0-5), review count (credibility), and GST registration.
+func scoreQuality(rating float64, reviews int, gstRegistered bool) float64 {
 	ratingScore := rating / 5.0
 
 	// Review credibility (logarithmic scaling: 50 reviews = 0.85 credibility)
 	credibility := 1.0 - math.Exp(-float64(reviews)/30.0)
 	adjustedRating := ratingScore * credibility
 
-	// Compliance bonus
+	// GST registration signals a verified, tax-compliant host
 	compliance := 0.0
-	if wdraStatus == "registered" {
+	if gstRegistered {
 		compliance += 0.12
-	}
-	if apmcLicensed {
-		compliance += 0.05
 	}
 
 	return math.Min(1.0, adjustedRating+compliance)

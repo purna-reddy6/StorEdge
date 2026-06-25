@@ -40,9 +40,9 @@ export default function WarehouseCard({ warehouse: w, selected, onSelect }: Prop
 
       <div className="mt-3 flex items-center gap-3 text-xs text-gray-600">
         <span className="bg-gray-100 rounded px-1.5 py-0.5">{warehouseTypeLabel[w.type]}</span>
-        {w.wdra_status === 'registered' && (
+        {w.gst_registered && (
           <span className="flex items-center gap-0.5 text-green-700">
-            <CheckBadgeIcon className="h-3.5 w-3.5" /> WDRA
+            <CheckBadgeIcon className="h-3.5 w-3.5" /> GST Verified
           </span>
         )}
         {w.min_temperature_celsius !== undefined && (

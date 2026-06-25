@@ -86,7 +86,7 @@ type Booking struct {
 
 // CreateBookingRequest is the input for creating a new booking.
 type CreateBookingRequest struct {
-	TenantID      string `json:"tenant_id"      binding:"required"`
+	TenantID      string `json:"tenant_id"`
 	WarehouseID   string `json:"warehouse_id"   binding:"required"`
 	PalletCount   int    `json:"pallet_count"   binding:"required,min=1"`
 	CommodityType string `json:"commodity_type" binding:"required"`

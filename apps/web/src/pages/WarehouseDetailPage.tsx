@@ -18,7 +18,7 @@ interface BookingForm {
   end_date: string
 }
 
-const COMMISION_RATE = 0.15
+const COMMISION_RATE = 0.10
 
 export default function WarehouseDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -28,7 +28,7 @@ export default function WarehouseDetailPage() {
   const [booked, setBooked] = useState(false)
 
   const { register, handleSubmit, watch, formState: { errors } } = useForm<BookingForm>({
-    defaultValues: { commodity_type: 'potato', pallet_count: 10 },
+    defaultValues: { commodity_type: 'ecommerce_fmcg', pallet_count: 10 },
   })
 
   const palletCount = watch('pallet_count') || 0
@@ -92,13 +92,10 @@ export default function WarehouseDetailPage() {
 
         <div className="mt-4 flex flex-wrap gap-3 text-sm">
           <span className="bg-gray-100 rounded-full px-3 py-1">{warehouseTypeLabel[warehouse.type]}</span>
-          {warehouse.wdra_status === 'registered' && (
+          {warehouse.gst_registered && (
             <span className="flex items-center gap-1 text-green-700 bg-green-50 rounded-full px-3 py-1">
-              <CheckBadgeIcon className="h-4 w-4" /> WDRA Registered
+              <CheckBadgeIcon className="h-4 w-4" /> GST Verified
             </span>
-          )}
-          {warehouse.apmc_licensed && (
-            <span className="bg-blue-50 text-blue-700 rounded-full px-3 py-1">APMC Licensed</span>
           )}
           {warehouse.min_temperature_celsius !== undefined && (
             <span className="bg-cyan-50 text-cyan-700 rounded-full px-3 py-1">
@@ -138,19 +135,33 @@ export default function WarehouseDetailPage() {
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Commodity</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Goods / Commodity</label>
               <select
                 className="input"
                 {...register('commodity_type', { required: true })}
               >
-                <option value="potato">Potato</option>
-                <option value="onion">Onion</option>
-                <option value="garlic">Garlic</option>
-                <option value="fruits">Fruits</option>
-                <option value="vegetables">Vegetables</option>
-                <option value="grains">Grains</option>
-                <option value="pharma">Pharma</option>
-                <option value="fmcg">FMCG</option>
+                <optgroup label="Food & Agriculture">
+                  <option value="fruits_vegetables">Fruits &amp; Vegetables</option>
+                  <option value="grains_pulses">Grains &amp; Pulses</option>
+                  <option value="dairy_frozen">Dairy &amp; Frozen Foods</option>
+                </optgroup>
+                <optgroup label="Industrial & Manufacturing">
+                  <option value="electronics">Electronics &amp; Components</option>
+                  <option value="auto_parts">Automobile Parts</option>
+                  <option value="machinery">Machinery &amp; Equipment</option>
+                  <option value="chemicals">Chemicals &amp; Raw Materials</option>
+                  <option value="furniture">Furniture &amp; White Goods</option>
+                </optgroup>
+                <optgroup label="Retail & E-Commerce">
+                  <option value="ecommerce_fmcg">FMCG / E-Commerce</option>
+                  <option value="apparel_textiles">Apparel &amp; Textiles</option>
+                  <option value="pharmaceutical">Pharmaceutical</option>
+                </optgroup>
+                <optgroup label="Personal Storage">
+                  <option value="household_goods">Household Goods</option>
+                  <option value="documents_archives">Documents &amp; Archives</option>
+                  <option value="other">Other</option>
+                </optgroup>
               </select>
             </div>
             <div>
@@ -192,7 +203,7 @@ export default function WarehouseDetailPage() {
               <span>{formatINR(totalAmount)}</span>
             </div>
             <div className="flex justify-between text-gray-500">
-              <span>Platform commission (15%)</span>
+              <span>Platform fee (10%)</span>
               <span>–{formatINR(commission)}</span>
             </div>
             <div className="flex justify-between font-semibold border-t border-gray-200 pt-2">
