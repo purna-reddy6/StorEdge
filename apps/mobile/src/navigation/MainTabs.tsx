@@ -7,7 +7,6 @@ import BookingConfirmScreen from '../screens/BookingConfirmScreen'
 import BookingSuccessScreen from '../screens/BookingSuccessScreen'
 import BookingsScreen from '../screens/BookingsScreen'
 import InventoryScreen from '../screens/InventoryScreen'
-import FinancingScreen from '../screens/FinancingScreen'
 import ProfileScreen from '../screens/ProfileScreen'
 import type { MainTabParamList, SearchStackParamList } from './types'
 
@@ -38,8 +37,7 @@ export default function MainTabs() {
       <Tab.Screen name="Search" component={SearchNavigator} options={{ title: 'Find' }} />
       <Tab.Screen name="Bookings" component={BookingsScreen} options={{ title: 'Bookings' }} />
       <Tab.Screen name="Inventory" component={InventoryScreen} options={{ title: 'Inventory' }} />
-      <Tab.Screen name="Financing" component={FinancingScreen} options={{ title: 'e-NWR' }} />
-      <Tab.Screen name="Profile" component={ProfileScreen} options={{ title: 'Profile' }} />
+<Tab.Screen name="Profile" component={ProfileScreen} options={{ title: 'Profile' }} />
     </Tab.Navigator>
   )
 }

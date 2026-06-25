@@ -88,15 +88,3 @@ export interface OccupancyStat {
   revenue: number
 }
 
-export interface EnwrReceipt {
-  id: string
-  receiptNumber: string
-  warehouseId: string
-  commodity: string
-  quantityKg: number
-  marketValueInr: number
-  maxLoanAmountInr: number
-  status: 'draft' | 'issued' | 'pledged' | 'released' | 'expired'
-  expiryDate: string
-  issuedAt?: string
-}

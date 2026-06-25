@@ -7,7 +7,6 @@ import WarehouseDetailPage from './pages/WarehouseDetailPage'
 import BookingsPage from './pages/BookingsPage'
 import OperatorDashboard from './pages/OperatorDashboard'
 import InventoryPage from './pages/InventoryPage'
-import FinancingPage from './pages/FinancingPage'
 import AlertsPage from './pages/AlertsPage'
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
@@ -33,8 +32,7 @@ export default function App() {
         <Route path="bookings" element={<BookingsPage />} />
         <Route path="operator" element={<OperatorDashboard />} />
         <Route path="inventory" element={<InventoryPage />} />
-        <Route path="financing" element={<FinancingPage />} />
-        <Route path="alerts" element={<AlertsPage />} />
+<Route path="alerts" element={<AlertsPage />} />
       </Route>
     </Routes>
   )

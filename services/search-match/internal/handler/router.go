@@ -63,10 +63,6 @@ func NewRouter(
 		protected.POST("/inventory/pallets/:id/release/initiate", iv.InitiateRelease)
 		protected.POST("/inventory/pallets/:id/release/authorize", iv.AuthorizeRelease)
 
-		fn := NewFinancingHandler(dashboardSvc, logger)
-		protected.GET("/financing/receipts", fn.ListReceipts)
-		protected.POST("/financing/receipts/:id/loans", fn.ApplyForLoan)
-
 		iot := NewIoTHandler(dashboardSvc, logger)
 		protected.GET("/iot/alerts", iot.ListAlerts)
 		protected.PATCH("/iot/alerts/:id/resolve", iot.ResolveAlert)

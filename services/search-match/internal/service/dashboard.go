@@ -9,7 +9,7 @@ import (
 	"go.uber.org/zap"
 )
 
-// DashboardService provides operator dashboard, inventory, financing, and IoT alert data.
+// DashboardService provides operator dashboard, inventory, and IoT alert data.
 // It queries the shared PostgreSQL DB directly — no inter-service HTTP calls needed.
 type DashboardService struct {
 	db     *sql.DB
@@ -191,79 +191,3 @@ func (s *DashboardService) AuthorizeRelease(ctx context.Context, palletItemID, o
 	return err
 }
 
-// ─── e-NWR Financing ─────────────────────────────────────────────────────────
-
-type EnwrReceipt struct {
-	ID               string     `json:"id"`
-	ReceiptNumber    string     `json:"receiptNumber"`
-	WarehouseID      string     `json:"warehouseId"`
-	Commodity        string     `json:"commodity"`
-	QuantityKg       float64    `json:"quantityKg"`
-	MarketValueInr   float64    `json:"marketValueInr"`
-	MaxLoanAmountInr float64    `json:"maxLoanAmountInr"`
-	Status           string     `json:"status"`
-	IssuedAt         *time.Time `json:"issuedAt,omitempty"`
-	ExpiryDate       string     `json:"expiryDate"`
-}
-
-func (s *DashboardService) ListReceipts(ctx context.Context, tenantID string) ([]EnwrReceipt, error) {
-	query := `
-		SELECT id, receipt_number, warehouse_id, commodity_type,
-			quantity_kg, market_value_inr, max_loan_amount_inr,
-			status::text, issued_at, expiry_date::text
-		FROM enwrs_receipts
-		WHERE ($1 = '' OR depositor_id::text = $1)
-		ORDER BY created_at DESC
-		LIMIT 50`
-
-	rows, err := s.db.QueryContext(ctx, query, tenantID)
-	if err != nil {
-		return nil, fmt.Errorf("list receipts: %w", err)
-	}
-	defer rows.Close()
-
-	var receipts []EnwrReceipt
-	for rows.Next() {
-		var r EnwrReceipt
-		if err := rows.Scan(&r.ID, &r.ReceiptNumber, &r.WarehouseID, &r.Commodity,
-			&r.QuantityKg, &r.MarketValueInr, &r.MaxLoanAmountInr,
-			&r.Status, &r.IssuedAt, &r.ExpiryDate); err != nil {
-			return nil, err
-		}
-		receipts = append(receipts, r)
-	}
-	return receipts, rows.Err()
-}
-
-func (s *DashboardService) ApplyForLoan(ctx context.Context, receiptID, applicantID string) error {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
-
-	var maxLoan float64
-	err = tx.QueryRowContext(ctx,
-		`UPDATE enwrs_receipts SET status = 'pledged', updated_at = NOW()
-		 WHERE id = $1::uuid AND status = 'issued' RETURNING max_loan_amount_inr`,
-		receiptID).Scan(&maxLoan)
-	if err == sql.ErrNoRows {
-		return fmt.Errorf("receipt not found or already pledged")
-	}
-	if err != nil {
-		return err
-	}
-
-	originationFee := maxLoan * 0.015
-	appNumber := fmt.Sprintf("LOAN-%d", time.Now().UnixMilli())
-	_, err = tx.ExecContext(ctx, `
-		INSERT INTO loan_applications
-			(application_number, enwrs_receipt_id, applicant_id, requested_amount_inr, origination_fee_inr)
-		VALUES ($1, $2::uuid, $3::uuid, $4, $5)`,
-		appNumber, receiptID, applicantID, maxLoan, originationFee)
-	if err != nil {
-		return err
-	}
-
-	return tx.Commit()
-}

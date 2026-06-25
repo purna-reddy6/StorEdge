@@ -7,7 +7,6 @@ export type MainTabParamList = {
   Search: undefined
   Bookings: undefined
   Inventory: undefined
-  Financing: undefined
   Profile: undefined
 }
 
