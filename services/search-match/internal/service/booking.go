@@ -122,6 +122,11 @@ func (s *BookingService) GetBooking(ctx context.Context, id string) (*matching.B
 	return s.bookingRepo.GetByID(ctx, id)
 }
 
+// ListBookings returns bookings for a user (all bookings for admins/operators when userID is "").
+func (s *BookingService) ListBookings(ctx context.Context, userID string) ([]*matching.Booking, error) {
+	return s.bookingRepo.ListByUser(ctx, userID)
+}
+
 func generateBookingNumber() string {
 	year := time.Now().Year()
 	random := rand.Intn(999999)

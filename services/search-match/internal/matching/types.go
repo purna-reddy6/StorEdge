@@ -70,6 +70,8 @@ type Booking struct {
 	BookingNumber    string    `json:"booking_number"`
 	TenantID         string    `json:"tenant_id"`
 	WarehouseID      string    `json:"warehouse_id"`
+	WarehouseName    string    `json:"warehouse_name,omitempty"`
+	FarmerName       string    `json:"farmer_name,omitempty"`
 	PalletCount      int       `json:"pallet_count"`
 	CommodityType    string    `json:"commodity_type"`
 	PricePerPallet   float64   `json:"price_per_pallet_inr"`

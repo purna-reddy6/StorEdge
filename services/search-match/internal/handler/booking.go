@@ -48,6 +48,18 @@ func (h *BookingHandler) CreateBooking(c *gin.Context) {
 	})
 }
 
+// ListBookings handles GET /api/v1/bookings
+func (h *BookingHandler) ListBookings(c *gin.Context) {
+	userID := currentUserID(c)
+	bookings, err := h.bookingSvc.ListBookings(c.Request.Context(), userID)
+	if err != nil {
+		h.logger.Error("list bookings failed", zap.Error(err))
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to list bookings"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"bookings": bookings})
+}
+
 // GetBooking handles GET /api/v1/bookings/:id
 func (h *BookingHandler) GetBooking(c *gin.Context) {
 	id := c.Param("id")

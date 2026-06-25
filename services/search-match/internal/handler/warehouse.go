@@ -24,14 +24,16 @@ func NewWarehouseHandler(matchingSvc *service.MatchingService, logger *zap.Logge
 // Query params: lat, lon, type, pallets, max_distance_km, max_price, wdra_only,
 //               w_distance, w_price, w_quality, w_temperature, page, page_size
 func (h *WarehouseHandler) Search(c *gin.Context) {
-	lat := parseFloat(c.Query("lat"), 27.1767)   // Default: Agra
-	lon := parseFloat(c.Query("lon"), 78.0081)
-	pallets := parseInt(c.Query("pallets"), 1)
-	maxDist := parseFloat(c.Query("max_distance_km"), 50)
-	maxPrice := parseFloat(c.Query("max_price"), 0)
+	lat := parseFloat(firstOf(c.Query("lat")), 27.1767)
+	// Accept both 'lng' (web/mobile) and 'lon' (legacy)
+	lon := parseFloat(firstOf(c.Query("lng"), c.Query("lon")), 78.0081)
+	pallets := parseInt(firstOf(c.Query("pallets")), 1)
+	// Accept both 'radius_km' (web/mobile) and 'max_distance_km' (legacy)
+	maxDist := parseFloat(firstOf(c.Query("radius_km"), c.Query("max_distance_km")), 50)
+	maxPrice := parseFloat(firstOf(c.Query("max_price")), 0)
 	wdraOnly := c.Query("wdra_only") == "true"
-	page := parseInt(c.Query("page"), 0)
-	pageSize := parseInt(c.Query("page_size"), 20)
+	page := parseInt(firstOf(c.Query("page")), 0)
+	pageSize := parseInt(firstOf(c.Query("page_size")), 20)
 
 	req := matching.SearchRequest{
 		OriginLat:         lat,
@@ -41,15 +43,14 @@ func (h *WarehouseHandler) Search(c *gin.Context) {
 		MaxDistanceKm:     maxDist,
 		MaxPricePerPallet: maxPrice,
 		WDRAOnly:          wdraOnly,
-		WeightDistance:    parseFloat(c.Query("w_distance"), 0.25),
-		WeightPrice:       parseFloat(c.Query("w_price"), 0.25),
-		WeightQuality:     parseFloat(c.Query("w_quality"), 0.25),
-		WeightTemperature: parseFloat(c.Query("w_temperature"), 0.25),
+		WeightDistance:    parseFloat(firstOf(c.Query("w_distance")), 0.25),
+		WeightPrice:       parseFloat(firstOf(c.Query("w_price")), 0.25),
+		WeightQuality:     parseFloat(firstOf(c.Query("w_quality")), 0.25),
+		WeightTemperature: parseFloat(firstOf(c.Query("w_temperature")), 0.25),
 		Page:              page,
 		PageSize:          pageSize,
 	}
 
-	// Cold chain params
 	if minTemp := c.Query("min_temp"); minTemp != "" {
 		req.MinTemperature = parseFloat(minTemp, 0)
 	}
@@ -64,12 +65,23 @@ func (h *WarehouseHandler) Search(c *gin.Context) {
 		return
 	}
 
+	// Return 'warehouses' key (expected by web + mobile clients)
 	c.JSON(http.StatusOK, gin.H{
-		"results":    results,
+		"warehouses": results,
 		"total":      total,
 		"page":       page,
 		"page_size":  pageSize,
 	})
+}
+
+// firstOf returns the first non-empty string from the arguments.
+func firstOf(vals ...string) string {
+	for _, v := range vals {
+		if v != "" {
+			return v
+		}
+	}
+	return ""
 }
 
 // GetWarehouse handles GET /api/v1/warehouses/:id
@@ -84,7 +96,7 @@ func (h *WarehouseHandler) GetWarehouse(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"error": "warehouse not found"})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"warehouse": warehouse})
+	c.JSON(http.StatusOK, warehouse)
 }
 
 // GetDynamicPrice handles GET /api/v1/warehouses/:id/price

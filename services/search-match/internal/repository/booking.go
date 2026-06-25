@@ -103,6 +103,52 @@ func (r *BookingRepository) GetByID(ctx context.Context, id string) (*matching.B
 	return &b, nil
 }
 
+// ListByUser returns bookings for a specific tenant. If userID is empty, returns all bookings.
+func (r *BookingRepository) ListByUser(ctx context.Context, userID string) ([]*matching.Booking, error) {
+	query := `
+		SELECT b.id, b.booking_number, b.tenant_id, b.warehouse_id,
+			b.pallet_count, b.commodity_type, b.price_per_pallet_inr,
+			b.total_amount_inr, b.commission_amount_inr, b.payout_amount_inr,
+			b.start_date, b.end_date, b.status, b.created_at,
+			w.name AS warehouse_name,
+			u.full_name AS farmer_name
+		FROM bookings b
+		JOIN warehouses w ON w.id = b.warehouse_id
+		JOIN users u ON u.id = b.tenant_id`
+
+	var args []interface{}
+	if userID != "" {
+		query += " WHERE b.tenant_id = $1"
+		args = append(args, userID)
+	}
+	query += " ORDER BY b.created_at DESC LIMIT 100"
+
+	rows, err := r.db.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("list bookings: %w", err)
+	}
+	defer rows.Close()
+
+	var results []*matching.Booking
+	for rows.Next() {
+		var b matching.Booking
+		var startDate, endDate time.Time
+		if err := rows.Scan(
+			&b.ID, &b.BookingNumber, &b.TenantID, &b.WarehouseID,
+			&b.PalletCount, &b.CommodityType, &b.PricePerPallet,
+			&b.TotalAmount, &b.CommissionAmount, &b.PayoutAmount,
+			&startDate, &endDate, &b.Status, &b.CreatedAt,
+			&b.WarehouseName, &b.FarmerName,
+		); err != nil {
+			return nil, fmt.Errorf("scan booking: %w", err)
+		}
+		b.StartDate = startDate
+		b.EndDate = endDate
+		results = append(results, &b)
+	}
+	return results, rows.Err()
+}
+
 // UpdateStatus changes a booking's status (e.g., pending → confirmed).
 func (r *BookingRepository) UpdateStatus(ctx context.Context, id, status string) error {
 	_, err := r.db.ExecContext(ctx,

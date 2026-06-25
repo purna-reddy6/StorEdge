@@ -55,9 +55,10 @@ func main() {
 	matchingSvc := service.NewMatchingService(warehouseRepo, pricingCache, aiEngineURL, logger)
 	bookingSvc := service.NewBookingService(bookingRepo, warehouseRepo, pricingCache, logger)
 	authSvc := service.NewAuthService(db, jwtSecret, logger)
+	dashboardSvc := service.NewDashboardService(db, logger)
 
 	// HTTP REST server
-	httpRouter := handler.NewRouter(matchingSvc, bookingSvc, authSvc, jwtSecret, logger)
+	httpRouter := handler.NewRouter(matchingSvc, bookingSvc, authSvc, dashboardSvc, jwtSecret, logger)
 	httpServer := &http.Server{
 		Addr:         ":" + httpPort,
 		Handler:      httpRouter,
