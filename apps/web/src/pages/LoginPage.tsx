@@ -11,14 +11,18 @@ export default function LoginPage() {
   const [otp, setOtp] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [devOtp, setDevOtp] = useState('')
   const { login } = useAuthStore()
   const navigate = useNavigate()
+
+  const fullPhone = `+91${phone}`
 
   const sendOtp = async () => {
     setError('')
     setLoading(true)
     try {
-      await api.post('/auth/otp/send', { phone })
+      const { data } = await api.post('/auth/otp/send', { phone: fullPhone })
+      if (data.dev_otp) setDevOtp(data.dev_otp)
       setStep('otp')
     } catch {
       setError('Failed to send OTP. Check the phone number.')
@@ -31,7 +35,7 @@ export default function LoginPage() {
     setError('')
     setLoading(true)
     try {
-      const { data } = await api.post('/auth/otp/verify', { phone, otp })
+      const { data } = await api.post('/auth/otp/verify', { phone: fullPhone, otp })
       login(data.user, data.token)
       navigate('/search')
     } catch {
@@ -89,6 +93,12 @@ export default function LoginPage() {
               <p className="text-sm text-gray-600">
                 OTP sent to <span className="font-medium">+91 {phone}</span>
               </p>
+              {devOtp && (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg px-4 py-2 text-center">
+                  <p className="text-xs text-yellow-700 font-medium">Dev mode — OTP:</p>
+                  <p className="text-2xl font-mono font-bold text-yellow-800 tracking-widest">{devOtp}</p>
+                </div>
+              )}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">6-digit OTP</label>
                 <input
