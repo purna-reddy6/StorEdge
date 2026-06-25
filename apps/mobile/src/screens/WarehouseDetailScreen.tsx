@@ -8,11 +8,11 @@ import type { SearchStackParamList } from '../navigation/types'
 import { useEffect, useState } from 'react'
 
 interface Warehouse {
-  id: string; name: string; address: string; city: string; state: string
-  warehouseType: string; totalCapacityMt: number; availablePallets: number
-  totalPallets: number; basePricePerMtPerMonth: number; dynamicPrice?: number
-  rating: number; reviewCount: number; wdraRegistered: boolean; apmcLicensed: boolean
-  minTemperatureCelsius?: number; maxTemperatureCelsius?: number
+  id: string; name: string; address_line1: string; city: string; state: string
+  type: string; total_pallet_capacity: number; available_pallet_slots: number
+  base_price_per_pallet_inr: number; price_per_pallet_per_day_inr: number
+  rating: number; total_reviews: number; wdra_status: string; apmc_licensed: boolean
+  min_temperature_celsius?: number; max_temperature_celsius?: number
 }
 
 export default function WarehouseDetailScreen() {
@@ -31,8 +31,8 @@ export default function WarehouseDetailScreen() {
   if (loading) return <View style={styles.center}><ActivityIndicator color="#16a34a" size="large" /></View>
   if (!warehouse) return <View style={styles.center}><Text>Warehouse not found.</Text></View>
 
-  const price = warehouse.dynamicPrice ?? warehouse.basePricePerMtPerMonth
-  const occupancy = Math.round((1 - warehouse.availablePallets / warehouse.totalPallets) * 100)
+  const price = warehouse.price_per_pallet_per_day_inr
+  const occupancy = Math.round((1 - warehouse.available_pallet_slots / warehouse.total_pallet_capacity) * 100)
 
   return (
     <ScrollView style={styles.container}>
@@ -44,24 +44,24 @@ export default function WarehouseDetailScreen() {
             <Text style={styles.priceSub}>/MT/month</Text>
           </View>
         </View>
-        <Text style={styles.address}>{warehouse.address}, {warehouse.city}, {warehouse.state}</Text>
+        <Text style={styles.address}>{warehouse.address_line1}, {warehouse.city}, {warehouse.state}</Text>
 
         <View style={styles.badges}>
-          <View style={styles.badge}><Text style={styles.badgeText}>{warehouseTypeLabel[warehouse.warehouseType] ?? warehouse.warehouseType}</Text></View>
-          {warehouse.wdraRegistered && <View style={[styles.badge, styles.badgeGreen]}><Text style={styles.badgeGreenText}>✓ WDRA</Text></View>}
-          {warehouse.apmcLicensed && <View style={[styles.badge, styles.badgeBlue]}><Text style={styles.badgeBluetText}>APMC</Text></View>}
+          <View style={styles.badge}><Text style={styles.badgeText}>{warehouseTypeLabel[warehouse.type] ?? warehouse.type}</Text></View>
+          {warehouse.wdra_status === 'registered' && <View style={[styles.badge, styles.badgeGreen]}><Text style={styles.badgeGreenText}>✓ WDRA</Text></View>}
+          {warehouse.apmc_licensed && <View style={[styles.badge, styles.badgeBlue]}><Text style={styles.badgeBluetText}>APMC</Text></View>}
         </View>
       </View>
 
       <View style={styles.statsRow}>
-        <Stat label="Rating" value={`⭐ ${warehouse.rating.toFixed(1)}`} sub={`${warehouse.reviewCount} reviews`} />
-        <Stat label="Available" value={`${warehouse.availablePallets}`} sub="pallets" />
-        <Stat label="Capacity" value={`${warehouse.totalCapacityMt} MT`} sub={`${occupancy}% occupied`} />
+        <Stat label="Rating" value={`⭐ ${warehouse.rating.toFixed(1)}`} sub={`${warehouse.total_reviews} reviews`} />
+        <Stat label="Available" value={`${warehouse.available_pallet_slots}`} sub="pallets" />
+        <Stat label="Occupied" value={`${occupancy}%`} sub={`of ${warehouse.total_pallet_capacity} cap`} />
       </View>
 
-      {warehouse.minTemperatureCelsius !== undefined && (
+      {warehouse.min_temperature_celsius !== undefined && (
         <View style={styles.tempCard}>
-          <Text style={styles.tempLabel}>🌡 Cold Chain: {warehouse.minTemperatureCelsius}°C – {warehouse.maxTemperatureCelsius}°C</Text>
+          <Text style={styles.tempLabel}>🌡 Cold Chain: {warehouse.min_temperature_celsius}°C – {warehouse.max_temperature_celsius}°C</Text>
         </View>
       )}
 

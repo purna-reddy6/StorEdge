@@ -13,14 +13,14 @@ interface Warehouse {
   city: string
   latitude: number
   longitude: number
-  warehouseType: string
-  availablePallets: number
-  basePricePerMtPerMonth: number
-  dynamicPrice?: number
+  type: string
+  available_pallet_slots: number
+  base_price_per_pallet_inr: number
+  price_per_pallet_per_day_inr: number
   rating: number
-  wdraRegistered: boolean
-  distanceKm?: number
-  matchScore?: number
+  wdra_status: string
+  distance_km?: number
+  match_score?: number
 }
 
 const INITIAL_REGION = {
@@ -94,7 +94,7 @@ export default function SearchMapScreen() {
             <Callout onPress={() => nav.navigate('WarehouseDetail', { warehouseId: w.id })}>
               <View style={styles.callout}>
                 <Text style={styles.calloutName}>{w.name}</Text>
-                <Text style={styles.calloutPrice}>{formatINR(w.dynamicPrice ?? w.basePricePerMtPerMonth)}/MT/mo</Text>
+                <Text style={styles.calloutPrice}>₹{w.price_per_pallet_per_day_inr.toFixed(0)}/pallet/day</Text>
                 <Text style={styles.calloutLink}>Tap to view →</Text>
               </View>
             </Callout>
@@ -122,10 +122,10 @@ export default function SearchMapScreen() {
               }}
             >
               <Text style={styles.cardName} numberOfLines={1}>{w.name}</Text>
-              <Text style={styles.cardType}>{warehouseTypeLabel[w.warehouseType] ?? w.warehouseType}</Text>
-              <Text style={styles.cardPrice}>{formatINR(w.dynamicPrice ?? w.basePricePerMtPerMonth)}/MT</Text>
-              <Text style={styles.cardPallets}>⬡ {w.availablePallets} pallets free</Text>
-              {w.wdraRegistered && <Text style={styles.wdra}>✓ WDRA</Text>}
+              <Text style={styles.cardType}>{warehouseTypeLabel[w.type] ?? w.type}</Text>
+              <Text style={styles.cardPrice}>₹{w.price_per_pallet_per_day_inr.toFixed(0)}/pallet/day</Text>
+              <Text style={styles.cardPallets}>⬡ {w.available_pallet_slots} pallets free</Text>
+              {w.wdra_status === 'registered' && <Text style={styles.wdra}>✓ WDRA</Text>}
               <TouchableOpacity
                 style={styles.bookBtn}
                 onPress={() => nav.navigate('WarehouseDetail', { warehouseId: w.id })}

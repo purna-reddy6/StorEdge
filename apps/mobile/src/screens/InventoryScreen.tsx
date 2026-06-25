@@ -7,10 +7,10 @@ import api from '../utils/api'
 import { formatDate } from '../utils/format'
 
 interface PalletItem {
-  id: string; palletCode: string; commodity: string
-  quantityKg: number; slotPosition: string
-  inwardDate: string; expectedOutwardDate: string
-  spoilageRiskLevel?: string
+  id: string; commodity: string
+  weightKg: number; slotPosition: string
+  inwardDate?: string; expectedOutwardDate?: string
+  currentTemperatureCelsius?: number
   releaseStatus?: string
 }
 
@@ -22,7 +22,7 @@ export default function InventoryScreen() {
   const [pallets, setPallets] = useState<PalletItem[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
-  const [otpModal, setOtpModal] = useState<{ palletId: string; palletCode: string } | null>(null)
+  const [otpModal, setOtpModal] = useState<{ palletId: string; slot: string } | null>(null)
   const [otp, setOtp] = useState('')
   const [otpLoading, setOtpLoading] = useState(false)
 
@@ -82,28 +82,23 @@ export default function InventoryScreen() {
         renderItem={({ item: p }) => (
           <View style={styles.card}>
             <View style={styles.topRow}>
-              <Text style={styles.palletCode}>{p.palletCode}</Text>
-              <Text style={styles.slot}>Slot {p.slotPosition}</Text>
+              <Text style={styles.palletCode}>{p.slotPosition || '—'}</Text>
+              <Text style={styles.slot}>{p.commodity.toUpperCase()}</Text>
             </View>
-            <Text style={styles.commodity}>{p.commodity} — {p.quantityKg.toLocaleString()} kg</Text>
+            <Text style={styles.commodity}>{p.commodity} — {p.weightKg.toLocaleString()} kg</Text>
             <View style={styles.datesRow}>
-              <Text style={styles.date}>In: {formatDate(p.inwardDate)}</Text>
-              <Text style={styles.date}>Expected out: {formatDate(p.expectedOutwardDate)}</Text>
+              {p.inwardDate && <Text style={styles.date}>In: {formatDate(p.inwardDate)}</Text>}
+              {p.expectedOutwardDate && <Text style={styles.date}>Out: {formatDate(p.expectedOutwardDate)}</Text>}
+              {p.currentTemperatureCelsius != null && (
+                <Text style={styles.date}>🌡 {p.currentTemperatureCelsius.toFixed(1)}°C</Text>
+              )}
             </View>
 
             <View style={styles.bottomRow}>
-              {p.spoilageRiskLevel && (
-                <View style={[styles.riskBadge, { backgroundColor: `${riskColor[p.spoilageRiskLevel]}20` }]}>
-                  <Text style={[styles.riskText, { color: riskColor[p.spoilageRiskLevel] }]}>
-                    {p.spoilageRiskLevel} risk
-                  </Text>
-                </View>
-              )}
-
-              {p.releaseStatus === 'pending_otp' || p.releaseStatus === 'otp_sent' ? (
+              {(p.releaseStatus === 'pending_otp' || p.releaseStatus === 'otp_sent') ? (
                 <TouchableOpacity
                   style={styles.otpBtn}
-                  onPress={() => { setOtpModal({ palletId: p.id, palletCode: p.palletCode }); setOtp('') }}
+                  onPress={() => { setOtpModal({ palletId: p.id, slot: p.slotPosition }); setOtp('') }}
                 >
                   <Text style={styles.otpBtnText}>Enter OTP to Release</Text>
                 </TouchableOpacity>
@@ -125,7 +120,7 @@ export default function InventoryScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
             <Text style={styles.modalTitle}>Authorize Stock Release</Text>
-            <Text style={styles.modalSub}>Pallet: {otpModal?.palletCode}</Text>
+            <Text style={styles.modalSub}>Slot: {otpModal?.slot}</Text>
             <Text style={styles.modalDesc}>Enter the 6-digit OTP sent to your WhatsApp to authorize release without visiting the warehouse.</Text>
             <TextInput
               style={styles.otpInput}

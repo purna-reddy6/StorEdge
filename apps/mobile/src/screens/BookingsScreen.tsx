@@ -4,10 +4,10 @@ import api from '../utils/api'
 import { formatINR, formatDate } from '../utils/format'
 
 interface Booking {
-  id: string; bookingNumber: string; warehouseName: string
-  commodity: string; palletCount: number; inwardDate: string
-  expectedOutwardDate: string; totalAmountInr: number
-  commissionInr: number; status: string
+  id: string; booking_number: string; warehouse_name: string
+  commodity_type: string; pallet_count: number; start_date: string
+  end_date: string; total_amount_inr: number
+  commission_amount_inr: number; status: string
 }
 
 const statusColor: Record<string, string> = {
@@ -49,21 +49,21 @@ export default function BookingsScreen() {
       renderItem={({ item: b }) => (
         <View style={styles.card}>
           <View style={styles.topRow}>
-            <Text style={styles.bookingNum}>{b.bookingNumber}</Text>
+            <Text style={styles.bookingNum}>{b.booking_number}</Text>
             <View style={[styles.statusBadge, { backgroundColor: `${statusColor[b.status]}20` }]}>
               <Text style={[styles.statusText, { color: statusColor[b.status] }]}>{b.status}</Text>
             </View>
           </View>
-          <Text style={styles.warehouseName}>{b.warehouseName}</Text>
-          <Text style={styles.meta}>{b.commodity} · {b.palletCount} pallets</Text>
+          <Text style={styles.warehouseName}>{b.warehouse_name}</Text>
+          <Text style={styles.meta}>{b.commodity_type} · {b.pallet_count} pallets</Text>
           <View style={styles.datesRow}>
-            <DateLabel label="In" date={b.inwardDate} />
+            <DateLabel label="In" date={b.start_date} />
             <Text style={styles.arrow}>→</Text>
-            <DateLabel label="Out" date={b.expectedOutwardDate} />
+            <DateLabel label="Out" date={b.end_date} />
             <View style={styles.spacer} />
             <View>
-              <Text style={styles.amount}>{formatINR(b.totalAmountInr)}</Text>
-              <Text style={styles.commission}>Commission: {formatINR(b.commissionInr)}</Text>
+              <Text style={styles.amount}>{formatINR(b.total_amount_inr)}</Text>
+              <Text style={styles.commission}>Commission: {formatINR(b.commission_amount_inr)}</Text>
             </View>
           </View>
         </View>

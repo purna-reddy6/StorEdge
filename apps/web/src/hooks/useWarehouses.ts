@@ -43,7 +43,13 @@ export function useCreateBooking() {
       inwardDate: string
       expectedOutwardDate: string
     }) => {
-      const { data } = await api.post('/bookings', body)
+      const { data } = await api.post('/bookings', {
+        warehouse_id: body.warehouseId,
+        pallet_count: body.palletCount,
+        commodity_type: body.commodity,
+        start_date: body.inwardDate,
+        end_date: body.expectedOutwardDate,
+      })
       return data as Booking
     },
     { onSuccess: () => qc.invalidateQueries('bookings') },

@@ -39,9 +39,9 @@ export default function OperatorDashboard() {
         <KpiCard label="Active Bookings" value={String(bookings.data?.filter(b => b.status === 'active').length ?? '—')} sub="tenants in-facility" />
         <KpiCard
           label="Open Alerts"
-          value={String(alerts.data?.filter(a => !a.resolvedAt).length ?? '—')}
+          value={String(alerts.data?.filter(a => !a.is_resolved).length ?? '—')}
           sub="IoT / sensor"
-          accent={alerts.data?.some(a => !a.resolvedAt && a.severity === 'critical') ? 'red' : 'default'}
+          accent={alerts.data?.some(a => !a.is_resolved && a.severity === 'critical') ? 'red' : 'default'}
         />
       </div>
 
@@ -92,12 +92,12 @@ export default function OperatorDashboard() {
           {(bookings.data ?? []).slice(0, 5).map((b) => (
             <div key={b.id} className="flex justify-between items-center py-2 border-b border-gray-50 last:border-0">
               <div>
-                <div className="text-sm font-medium text-gray-900">{b.farmerName}</div>
-                <div className="text-xs text-gray-500 capitalize">{b.commodity} · {b.palletCount} pallets</div>
+                <div className="text-sm font-medium text-gray-900">{b.farmer_name}</div>
+                <div className="text-xs text-gray-500 capitalize">{b.commodity_type} · {b.pallet_count} pallets</div>
               </div>
               <div className="text-right">
-                <div className="text-sm font-semibold">{formatINR(b.totalAmountInr - b.commissionInr)}</div>
-                <div className="text-xs text-gray-400">{formatDate(b.inwardDate)}</div>
+                <div className="text-sm font-semibold">{formatINR(b.payout_amount_inr)}</div>
+                <div className="text-xs text-gray-400">{formatDate(b.start_date)}</div>
               </div>
             </div>
           ))}
@@ -110,12 +110,12 @@ export default function OperatorDashboard() {
               <AlertDot severity={a.severity} />
               <div className="min-w-0">
                 <div className="text-sm font-medium text-gray-900 capitalize">
-                  {a.alertType.replace(/_/g, ' ')}
+                  {a.alert_type.replace(/_/g, ' ')}
                 </div>
                 <div className="text-xs text-gray-500 truncate">{a.message}</div>
-                <div className="text-xs text-gray-400">{formatDate(a.createdAt)}</div>
+                <div className="text-xs text-gray-400">{formatDate(a.created_at)}</div>
               </div>
-              {!a.resolvedAt && (
+              {!a.is_resolved && (
                 <span className="badge-red flex-shrink-0">Open</span>
               )}
             </div>

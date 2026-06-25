@@ -6,7 +6,7 @@ import { formatINR, formatDate } from '../utils/format'
 interface EnwrReceipt {
   id: string; receiptNumber: string; commodity: string
   quantityKg: number; marketValueInr: number; maxLoanAmountInr: number
-  status: string; expiryDate: string; issueDate: string
+  status: string; expiryDate: string; issuedAt?: string
 }
 
 const statusColor: Record<string, string> = {
@@ -116,7 +116,7 @@ export default function FinancingScreen() {
           </View>
 
           <Text style={styles.expiry}>
-            Issued: {formatDate(r.issueDate)} · Expires: {formatDate(r.expiryDate)}
+            {r.issuedAt ? `Issued: ${formatDate(r.issuedAt)} · ` : ''}Expires: {formatDate(r.expiryDate)}
           </Text>
 
           {r.status === 'issued' && (

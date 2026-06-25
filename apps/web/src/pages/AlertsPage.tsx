@@ -25,8 +25,8 @@ export default function AlertsPage() {
     { onSuccess: () => qc.invalidateQueries('iot-alerts') }
   )
 
-  const open = alerts.filter(a => !a.resolvedAt)
-  const resolved = alerts.filter(a => a.resolvedAt)
+  const open = alerts.filter(a => !a.is_resolved)
+  const resolved = alerts.filter(a => a.is_resolved)
 
   return (
     <div className="p-6 space-y-6">
@@ -77,20 +77,20 @@ function AlertRow({ alert: a, onResolve }: { alert: IoTAlert; onResolve?: () => 
           <div>
             <div className="flex items-center gap-2">
               <span className="font-semibold text-gray-900 capitalize">
-                {a.alertType.replace(/_/g, ' ')}
+                {a.alert_type.replace(/_/g, ' ')}
               </span>
               <span className="text-xs text-gray-500">{sc.label}</span>
             </div>
             <p className="text-sm text-gray-700 mt-0.5">{a.message}</p>
             <div className="text-xs text-gray-500 mt-1 flex gap-3">
-              <span>Sensor: {a.sensorId}</span>
-              <span>{formatDate(a.createdAt)}</span>
-              {a.resolvedAt && <span className="text-green-600">Resolved {formatDate(a.resolvedAt)}</span>}
+              <span>Sensor: {a.sensor_id}</span>
+              <span>{formatDate(a.created_at)}</span>
+              {a.resolved_at && <span className="text-green-600">Resolved {formatDate(a.resolved_at)}</span>}
             </div>
           </div>
         </div>
 
-        {!a.resolvedAt && onResolve && (
+        {!a.is_resolved && onResolve && (
           <button
             className="btn-secondary text-xs py-1 px-2 flex-shrink-0"
             onClick={onResolve}

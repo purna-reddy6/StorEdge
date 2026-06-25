@@ -4,16 +4,14 @@ import { formatDate } from '../utils/format'
 
 interface PalletItem {
   id: string
-  palletCode: string
+  bookingId: string
   commodity: string
-  quantityKg: number
+  weightKg: number
   slotPosition: string
-  inwardDate: string
-  expectedOutwardDate: string
+  inwardDate?: string
+  expectedOutwardDate?: string
   currentTemperatureCelsius?: number
-  currentHumidityPct?: number
-  spoilageRiskScore?: number
-  spoilageRiskLevel?: string
+  releaseStatus?: string
 }
 
 function usePallets() {
@@ -22,13 +20,6 @@ function usePallets() {
   )
 }
 
-const riskColors: Record<string, string> = {
-  safe: 'badge-green',
-  low: 'badge-green',
-  medium: 'badge-yellow',
-  high: 'badge-red',
-  critical: 'badge-red',
-}
 
 export default function InventoryPage() {
   const { data: pallets = [], isLoading } = usePallets()
@@ -43,7 +34,7 @@ export default function InventoryPage() {
         <table className="w-full text-sm">
           <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
-              {['Pallet Code', 'Commodity', 'Qty (kg)', 'Slot', 'Inward', 'Out (Expected)', 'Temp', 'Risk'].map(h => (
+              {['Slot', 'Commodity', 'Weight (kg)', 'Booking', 'Inward', 'Out (Expected)', 'Temp', 'Release'].map(h => (
                 <th key={h} className="text-left text-xs font-medium text-gray-500 uppercase tracking-wide px-4 py-3">{h}</th>
               ))}
             </tr>
@@ -51,24 +42,22 @@ export default function InventoryPage() {
           <tbody className="divide-y divide-gray-100">
             {pallets.map((p) => (
               <tr key={p.id} className="hover:bg-gray-50">
-                <td className="px-4 py-3 font-mono text-xs text-gray-600">{p.palletCode}</td>
+                <td className="px-4 py-3 font-mono text-xs text-gray-600">{p.slotPosition || '—'}</td>
                 <td className="px-4 py-3 capitalize">{p.commodity}</td>
-                <td className="px-4 py-3">{p.quantityKg.toLocaleString()}</td>
-                <td className="px-4 py-3 font-mono text-xs bg-gray-50 text-gray-700">{p.slotPosition}</td>
-                <td className="px-4 py-3 text-gray-600">{formatDate(p.inwardDate)}</td>
-                <td className="px-4 py-3 text-gray-600">{formatDate(p.expectedOutwardDate)}</td>
+                <td className="px-4 py-3">{p.weightKg.toLocaleString()}</td>
+                <td className="px-4 py-3 font-mono text-xs text-gray-400 truncate max-w-24">{p.bookingId.slice(0,8)}…</td>
+                <td className="px-4 py-3 text-gray-600">{p.inwardDate ? formatDate(p.inwardDate) : '—'}</td>
+                <td className="px-4 py-3 text-gray-600">{p.expectedOutwardDate ? formatDate(p.expectedOutwardDate) : '—'}</td>
                 <td className="px-4 py-3">
-                  {p.currentTemperatureCelsius !== undefined ? (
+                  {p.currentTemperatureCelsius != null ? (
                     <span className={p.currentTemperatureCelsius > 8 ? 'text-red-600 font-medium' : 'text-gray-700'}>
                       {p.currentTemperatureCelsius.toFixed(1)}°C
                     </span>
                   ) : '—'}
                 </td>
                 <td className="px-4 py-3">
-                  {p.spoilageRiskLevel ? (
-                    <span className={riskColors[p.spoilageRiskLevel] ?? 'badge-yellow'}>
-                      {p.spoilageRiskLevel}
-                    </span>
+                  {p.releaseStatus ? (
+                    <span className="badge-yellow capitalize">{p.releaseStatus.replace('_', ' ')}</span>
                   ) : '—'}
                 </td>
               </tr>

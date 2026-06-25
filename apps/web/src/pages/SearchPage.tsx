@@ -193,7 +193,7 @@ export default function SearchPage() {
                 <div className="font-semibold text-sm">{selectedWarehouse.name}</div>
                 <div className="text-xs text-gray-500">{selectedWarehouse.city}</div>
                 <div className="text-sm font-bold text-brand-600 mt-1">
-                  ₹{selectedWarehouse.basePricePerMtPerMonth}/MT/mo
+                  ₹{selectedWarehouse.price_per_pallet_per_day_inr.toFixed(0)}/pallet/day
                 </div>
               </div>
             </Popup>
@@ -212,7 +212,7 @@ function WarehouseMarker({ warehouse: w, selected }: { warehouse: Warehouse; sel
           selected ? 'bg-brand-600 text-white' : 'bg-white text-brand-700 border border-brand-300'
         }`}
       >
-        ₹{Math.round(w.basePricePerMtPerMonth / 100) * 100}
+        ₹{Math.round(w.price_per_pallet_per_day_inr)}
       </div>
       <MapPinIcon className={`h-4 w-4 -mt-0.5 ${selected ? 'text-brand-600' : 'text-brand-400'}`} />
     </div>

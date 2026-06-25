@@ -12,10 +12,10 @@ import { useWarehouse, useCreateBooking } from '../hooks/useWarehouses'
 import { formatINR, warehouseTypeLabel } from '../utils/format'
 
 interface BookingForm {
-  commodity: string
-  palletCount: number
-  inwardDate: string
-  expectedOutwardDate: string
+  commodity_type: string
+  pallet_count: number
+  start_date: string
+  end_date: string
 }
 
 const COMMISION_RATE = 0.15
@@ -28,24 +28,30 @@ export default function WarehouseDetailPage() {
   const [booked, setBooked] = useState(false)
 
   const { register, handleSubmit, watch, formState: { errors } } = useForm<BookingForm>({
-    defaultValues: { commodity: 'potato', palletCount: 10 },
+    defaultValues: { commodity_type: 'potato', pallet_count: 10 },
   })
 
-  const palletCount = watch('palletCount') || 0
-  const inDate = watch('inwardDate')
-  const outDate = watch('expectedOutwardDate')
+  const palletCount = watch('pallet_count') || 0
+  const inDate = watch('start_date')
+  const outDate = watch('end_date')
 
   const durationDays = inDate && outDate
     ? Math.max(1, Math.ceil((new Date(outDate).getTime() - new Date(inDate).getTime()) / 86400000))
     : 30
 
-  const pricePerMonth = warehouse?.dynamicPrice ?? warehouse?.basePricePerMtPerMonth ?? 0
-  const totalAmount = Math.round((pricePerMonth / 30) * durationDays * palletCount * 0.5)
+  const pricePerPalletDay = warehouse?.price_per_pallet_per_day_inr ?? 0
+  const totalAmount = Math.round(pricePerPalletDay * durationDays * palletCount)
   const commission = Math.round(totalAmount * COMMISION_RATE)
 
   const onSubmit = async (form: BookingForm) => {
     if (!id) return
-    await createBooking({ warehouseId: id, ...form })
+    await createBooking({
+      warehouseId: id,
+      palletCount: form.pallet_count,
+      commodity: form.commodity_type,
+      inwardDate: form.start_date,
+      expectedOutwardDate: form.end_date,
+    })
     setBooked(true)
   }
 
@@ -73,30 +79,30 @@ export default function WarehouseDetailPage() {
             <h1 className="text-2xl font-bold text-gray-900">{warehouse.name}</h1>
             <div className="flex items-center gap-1.5 text-gray-500 mt-1">
               <MapPinIcon className="h-4 w-4" />
-              <span>{warehouse.address}, {warehouse.city}, {warehouse.state}</span>
+              <span>{warehouse.address_line1}, {warehouse.city}, {warehouse.state}</span>
             </div>
           </div>
           <div className="text-right">
             <div className="text-2xl font-bold text-brand-600">
-              {formatINR(pricePerMonth)}
+              ₹{pricePerPalletDay.toFixed(0)}
             </div>
-            <div className="text-sm text-gray-400">/MT/month</div>
+            <div className="text-sm text-gray-400">/pallet/day</div>
           </div>
         </div>
 
         <div className="mt-4 flex flex-wrap gap-3 text-sm">
-          <span className="bg-gray-100 rounded-full px-3 py-1">{warehouseTypeLabel[warehouse.warehouseType]}</span>
-          {warehouse.wdraRegistered && (
+          <span className="bg-gray-100 rounded-full px-3 py-1">{warehouseTypeLabel[warehouse.type]}</span>
+          {warehouse.wdra_status === 'registered' && (
             <span className="flex items-center gap-1 text-green-700 bg-green-50 rounded-full px-3 py-1">
               <CheckBadgeIcon className="h-4 w-4" /> WDRA Registered
             </span>
           )}
-          {warehouse.apmcLicensed && (
+          {warehouse.apmc_licensed && (
             <span className="bg-blue-50 text-blue-700 rounded-full px-3 py-1">APMC Licensed</span>
           )}
-          {warehouse.minTemperatureCelsius !== undefined && (
+          {warehouse.min_temperature_celsius !== undefined && (
             <span className="bg-cyan-50 text-cyan-700 rounded-full px-3 py-1">
-              {warehouse.minTemperatureCelsius}°C – {warehouse.maxTemperatureCelsius}°C
+              {warehouse.min_temperature_celsius}°C – {warehouse.max_temperature_celsius}°C
             </span>
           )}
         </div>
@@ -107,21 +113,21 @@ export default function WarehouseDetailPage() {
               <StarIcon className="h-4 w-4 text-yellow-400" />
               <span className="font-bold">{warehouse.rating.toFixed(1)}</span>
             </div>
-            <div className="text-xs text-gray-500">{warehouse.reviewCount} reviews</div>
+            <div className="text-xs text-gray-500">{warehouse.total_reviews} reviews</div>
           </div>
           <div className="text-center">
             <div className="flex items-center justify-center gap-1">
               <CubeIcon className="h-4 w-4 text-brand-500" />
-              <span className="font-bold">{warehouse.availablePallets}</span>
+              <span className="font-bold">{warehouse.available_pallet_slots}</span>
             </div>
             <div className="text-xs text-gray-500">pallets available</div>
           </div>
           <div className="text-center">
             <div className="flex items-center justify-center gap-1">
               <CalendarIcon className="h-4 w-4 text-purple-500" />
-              <span className="font-bold">{warehouse.totalCapacityMt} MT</span>
+              <span className="font-bold">{warehouse.total_pallet_capacity}</span>
             </div>
-            <div className="text-xs text-gray-500">total capacity</div>
+            <div className="text-xs text-gray-500">total capacity (pallets)</div>
           </div>
         </div>
       </div>
@@ -135,7 +141,7 @@ export default function WarehouseDetailPage() {
               <label className="block text-sm font-medium text-gray-700 mb-1">Commodity</label>
               <select
                 className="input"
-                {...register('commodity', { required: true })}
+                {...register('commodity_type', { required: true })}
               >
                 <option value="potato">Potato</option>
                 <option value="onion">Onion</option>
@@ -153,10 +159,10 @@ export default function WarehouseDetailPage() {
                 type="number"
                 className="input"
                 min={1}
-                max={warehouse.availablePallets}
-                {...register('palletCount', { required: true, min: 1, max: warehouse.availablePallets, valueAsNumber: true })}
+                max={warehouse.available_pallet_slots}
+                {...register('pallet_count', { required: true, min: 1, max: warehouse.available_pallet_slots, valueAsNumber: true })}
               />
-              {errors.palletCount && <p className="text-xs text-red-500 mt-1">Max {warehouse.availablePallets} pallets</p>}
+              {errors.pallet_count && <p className="text-xs text-red-500 mt-1">Max {warehouse.available_pallet_slots} pallets</p>}
             </div>
           </div>
 
@@ -166,7 +172,7 @@ export default function WarehouseDetailPage() {
               <input
                 type="date"
                 className="input"
-                {...register('inwardDate', { required: true })}
+                {...register('start_date', { required: true })}
               />
             </div>
             <div>
@@ -174,7 +180,7 @@ export default function WarehouseDetailPage() {
               <input
                 type="date"
                 className="input"
-                {...register('expectedOutwardDate', { required: true })}
+                {...register('end_date', { required: true })}
               />
             </div>
           </div>

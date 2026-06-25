@@ -19,25 +19,26 @@ export type WarehouseType =
 export interface Warehouse {
   id: string
   name: string
-  address: string
+  address_line1: string
   city: string
   state: string
+  pincode: string
   latitude: number
   longitude: number
-  warehouseType: WarehouseType
-  totalCapacityMt: number
-  availablePallets: number
-  totalPallets: number
-  basePricePerMtPerMonth: number
-  dynamicPrice?: number
+  type: WarehouseType
+  total_pallet_capacity: number
+  available_pallet_slots: number
+  base_price_per_pallet_inr: number
+  price_per_pallet_per_day_inr: number
   rating: number
-  reviewCount: number
-  wdraRegistered: boolean
-  apmcLicensed: boolean
-  minTemperatureCelsius?: number
-  maxTemperatureCelsius?: number
-  distanceKm?: number
-  matchScore?: number
+  total_reviews: number
+  wdra_status: string
+  apmc_licensed: boolean
+  min_temperature_celsius?: number
+  max_temperature_celsius?: number
+  distance_km?: number
+  match_score?: number
+  estimated_monthly_cost_inr?: number
 }
 
 export interface SearchParams {
@@ -55,28 +56,30 @@ export type BookingStatus = 'pending' | 'confirmed' | 'active' | 'completed' | '
 
 export interface Booking {
   id: string
-  bookingNumber: string
-  warehouseId: string
-  warehouseName: string
-  farmerName: string
-  commodity: string
-  palletCount: number
-  inwardDate: string
-  expectedOutwardDate: string
-  totalAmountInr: number
-  commissionInr: number
+  booking_number: string
+  warehouse_id: string
+  warehouse_name: string
+  farmer_name: string
+  commodity_type: string
+  pallet_count: number
+  start_date: string
+  end_date: string
+  total_amount_inr: number
+  commission_amount_inr: number
+  payout_amount_inr: number
   status: BookingStatus
 }
 
 export interface IoTAlert {
   id: string
-  warehouseId: string
-  sensorId: string
-  alertType: string
+  warehouse_id: string
+  sensor_id: string
+  alert_type: string
   severity: 'info' | 'warning' | 'critical'
   message: string
-  resolvedAt?: string
-  createdAt: string
+  is_resolved: boolean
+  resolved_at?: string
+  created_at: string
 }
 
 export interface OccupancyStat {
@@ -95,5 +98,5 @@ export interface EnwrReceipt {
   maxLoanAmountInr: number
   status: 'draft' | 'issued' | 'pledged' | 'released' | 'expired'
   expiryDate: string
-  issueDate: string
+  issuedAt?: string
 }

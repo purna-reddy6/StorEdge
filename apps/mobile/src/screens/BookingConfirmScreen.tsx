@@ -36,13 +36,13 @@ export default function BookingConfirmScreen() {
     setLoading(true)
     try {
       const { data } = await api.post('/bookings', {
-        warehouseId: route.params.warehouseId,
-        commodity,
-        palletCount,
-        inwardDate,
-        expectedOutwardDate: outwardDate,
+        warehouse_id: route.params.warehouseId,
+        commodity_type: commodity,
+        pallet_count: palletCount,
+        start_date: inwardDate,
+        end_date: outwardDate,
       })
-      nav.replace('BookingSuccess', { bookingNumber: data.bookingNumber })
+      nav.replace('BookingSuccess', { bookingNumber: data.booking?.booking_number ?? data.booking?.id ?? 'CONFIRMED' })
     } catch {
       Alert.alert('Booking failed', 'Please try again.')
     } finally {

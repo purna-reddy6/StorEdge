@@ -85,7 +85,7 @@ export default function FinancingPage() {
                       {r.commodity} — {r.quantityKg.toLocaleString()} kg
                     </div>
                     <div className="text-xs text-gray-500 mt-0.5">
-                      Issued: {formatDate(r.issueDate)} · Expires: {formatDate(r.expiryDate)}
+                      Issued: {r.issuedAt ? formatDate(r.issuedAt) : ""} · Expires: {formatDate(r.expiryDate)}
                     </div>
                   </div>
                   <div className="text-right">
